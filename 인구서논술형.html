@@ -97,6 +97,27 @@ th{font-family:'Jua',sans-serif;color:var(--ink-soft);font-size:12px}
 .mean{position:absolute;top:1px;width:2px;height:22px;background:#8A78D6;transform:translateX(-50%)}
 .banner{border-radius:14px;padding:9px 14px;font-size:12.5px;margin-bottom:14px}
 .banner.off{background:#FFE9E9;color:#8C3B47}.banner.on{background:#DFF4F2;color:#1D6F6A}
+
+/* ── 채점 화면: 학생 작성 칸 / 교사 입력 칸 구분 ── */
+.blk{border-radius:16px;padding:13px 15px;margin:8px 0}
+.blk .cap{font-family:'Jua','Apple SD Gothic Neo',sans-serif;font-size:12.5px;display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.blk .cap i{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+.blk .cap em{font-style:normal;margin-left:auto;font-size:11.5px;color:var(--ink-soft)}
+.blk-s{background:var(--clay-2);box-shadow:var(--shadow-in)}                       /* 학생 작성 */
+.blk-s .cap{color:#6B6488}
+.blk-t{background:#FFF6E1;box-shadow:4px 4px 10px rgba(150,118,50,.15),-3px -3px 8px rgba(255,255,255,.95);border:2px solid #F2D9A0}
+.blk-t .cap{color:#8A6520}
+.blk-t label{color:#8A6520}
+.blk-t input{background:#FFFCF4;box-shadow:inset 3px 3px 7px rgba(150,118,50,.16),inset -3px -3px 7px rgba(255,255,255,.95)}
+.blk-a{background:#EEE9FB;box-shadow:4px 4px 10px rgba(100,80,170,.13),-3px -3px 8px rgba(255,255,255,.95)}
+.blk-a .cap{color:#5B4B9E}
+.ro{white-space:pre-wrap;background:#fff;border-radius:12px;padding:11px 13px;font-size:14px;line-height:1.85}
+.livesum{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:9px 13px;
+  border-radius:12px;background:#FFFCF4;box-shadow:inset 3px 3px 7px rgba(150,118,50,.16);font-size:13.5px;color:#8A6520}
+.livesum b{font-family:'Jua',sans-serif;font-size:19px}
+.keylegend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink-soft);margin-bottom:12px}
+.keylegend span{display:inline-flex;align-items:center;gap:5px}
+.keylegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 #sheet{display:none}
@@ -321,6 +342,11 @@ th{font-family:'Jua',sans-serif;color:var(--ink-soft);font-size:12px}
     </div>
 
     <div id="t2" class="card hide">
+      <div class="keylegend">
+        <span><i style="background:#FFF6E1;border:2px solid #F2D9A0"></i>교사가 입력하는 칸</span>
+        <span><i style="background:var(--clay-2);border:1px solid var(--line)"></i>학생이 작성한 칸 (읽기 전용)</span>
+        <span><i style="background:#EEE9FB"></i>AI 채점 초안</span>
+      </div>
       <label for="tPick">학생 고르기</label><select id="tPick"></select>
       <div id="tGrade" style="margin-top:16px"></div>
     </div>
@@ -679,48 +705,78 @@ function renderGrade(){
   if(!s){box.innerHTML='<p class="tiny">학생을 고르면 답안과 채점란이 나타납니다.</p>';return}
   const t=s.__teacher||{},d=DATA[s.cty]||DATA.kr,v=k=>t[k]!==undefined&&t[k]!==''?t[k]:'';
   box.innerHTML=`
-   <div class="note lilac">자동 채점 — 지표 <b>${s.autoRead||0}/3</b> · 단계 <b>${s.autoStage||0}/1</b><br>
-     <span class="tiny">예측 방향 참고: ${s.pred?dirNote(s.pred,pct(d.now),pct(d.fut)):'–'}</span></div>
-   <div id="aiBox" style="margin-top:12px"></div>
-   <div class="q"><span class="pts">6점</span><b>문항 3</b> 2050년 예측 근거 · ${(s.predReason||'').length}자</div>
-   <div class="scroll" style="margin-bottom:8px"><table><thead><tr>${BANDS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
-     <tbody><tr>${(s.pred||[]).map(x=>`<td>${x.toFixed(1)}</td>`).join('')}</tr>
-     <tr>${pct(d.fut).map(x=>`<td class="muted">${x.toFixed(1)}</td>`).join('')}</tr></tbody></table></div>
-   <div class="sunken">${escBr(s.predReason)||'<span class="muted">미작성</span>'}</div>
-   <label style="margin-top:8px">점수 (0~6)</label><input id="gP" inputmode="decimal" value="${v('pred')}">
-   <div class="q"><span class="pts">10점</span><b>문항 4</b> 논술 · ${(s.essay||'').length}자</div>
-   <div class="sunken" style="max-height:340px;overflow:auto">${escBr(s.essay)||'<span class="muted">미작성</span>'}</div>
-   <div class="row2" style="margin-top:10px">
-     <div><label>① 지표 인용 (0~2)</label><input id="gC1" inputmode="decimal" value="${v('c1')}"></div>
-     <div><label>② 문제 두 가지 (0~3)</label><input id="gC2" inputmode="decimal" value="${v('c2')}"></div>
-     <div><label>③ 국가·사회 방안 (0~3)</label><input id="gC3" inputmode="decimal" value="${v('c3')}"></div>
-     <div><label>④ 세대 간 정의 (0~2)</label><input id="gC4" inputmode="decimal" value="${v('c4')}"></div>
+   <div class="blk blk-s" style="background:var(--clay);box-shadow:var(--shadow-sm)">
+     <div class="cap"><i style="background:var(--ink-soft)"></i>자동 채점 (수정 불가)<em>${(s.autoRead||0)+(s.autoStage||0)} / 4점</em></div>
+     지표 <b>${s.autoRead||0}</b>/3 · 단계 <b>${s.autoStage||0}</b>/1
+     <div class="tiny" style="margin-top:4px">예측 방향 참고: ${s.pred?dirNote(s.pred,pct(d.now),pct(d.fut)):'–'}</div>
    </div>
-   <label style="margin-top:12px">채점 메모</label><input id="gM" value="${esc(s.__memo||'')}">
+   <div id="aiBox"></div>
+
+   <div class="q"><span class="pts">6점</span><b>문항 3</b> 2050년 인구 구조 예측</div>
+   <div class="blk blk-s">
+     <div class="cap"><i style="background:var(--pred)"></i>학생이 작성한 칸<em>읽기 전용 · ${(s.predReason||'').length}자</em></div>
+     <div class="scroll" style="margin-bottom:8px"><table><thead><tr><th></th>${BANDS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
+       <tbody><tr><td>예측</td>${(s.pred||[]).map(x=>`<td>${x.toFixed(1)}</td>`).join('')}</tr>
+       <tr><td class="muted">실제</td>${pct(d.fut).map(x=>`<td class="muted">${x.toFixed(1)}</td>`).join('')}</tr></tbody></table></div>
+     <div class="ro">${escBr(s.predReason)||'<span class="muted">미작성</span>'}</div>
+   </div>
+   <div class="blk blk-t">
+     <div class="cap"><i style="background:#E0A83C"></i>교사가 입력하는 칸</div>
+     <label for="gP">문항 3 점수 (0~6) — 코호트 이동 3 · 인구 변동 요인 2 · 작도 일치 1</label>
+     <input id="gP" inputmode="decimal" value="${v('pred')}">
+   </div>
+
+   <div class="q"><span class="pts">10점</span><b>문항 4</b> 인구 문제 진단과 해결 방안</div>
+   <div class="blk blk-s">
+     <div class="cap"><i style="background:var(--pred)"></i>학생이 작성한 칸<em>읽기 전용 · ${(s.essay||'').length}자</em></div>
+     <div class="ro" style="max-height:340px;overflow:auto">${escBr(s.essay)||'<span class="muted">미작성</span>'}</div>
+   </div>
+   <div class="blk blk-t">
+     <div class="cap"><i style="background:#E0A83C"></i>교사가 입력하는 칸</div>
+     <div class="row2">
+       <div><label for="gC1">① 지표 인용 (0~2)</label><input id="gC1" inputmode="decimal" value="${v('c1')}"></div>
+       <div><label for="gC2">② 문제 두 가지 (0~3)</label><input id="gC2" inputmode="decimal" value="${v('c2')}"></div>
+       <div><label for="gC3">③ 국가·사회 방안 (0~3)</label><input id="gC3" inputmode="decimal" value="${v('c3')}"></div>
+       <div><label for="gC4">④ 세대 간 정의 (0~2)</label><input id="gC4" inputmode="decimal" value="${v('c4')}"></div>
+     </div>
+     <label for="gM" style="margin-top:12px">채점 메모</label><input id="gM" value="${esc(s.__memo||'')}">
+     <div class="livesum"><span>자동 ${(s.autoRead||0)+(s.autoStage||0)} + 교사 <span id="gTea">0</span> =</span>
+       <span>총점 <b id="gTot">0</b> / 20점</span></div>
+   </div>
+
    <div class="stack" style="margin-top:14px;justify-content:space-between">
      <button class="ghost" id="gUnlock">제출 잠금 해제</button>
      <button class="primary" id="gSave">채점 저장</button></div>
    <p class="tiny" id="gMsg" style="text-align:right"></p>`;
   const cap=(id,max)=>{const x=parseFloat($(id).value);return isNaN(x)?0:Math.max(0,Math.min(max,x))};
   const FIELDS=[['#gP','pred'],['#gC1','c1'],['#gC2','c2'],['#gC3','c3'],['#gC4','c4']];
+  const LIMIT={'#gP':6,'#gC1':2,'#gC2':3,'#gC3':3,'#gC4':2};
+  function liveSum(){
+    const tea=FIELDS.reduce((n,[id])=>n+cap(id,LIMIT[id]),0);
+    $('#gTea').textContent=tea; $('#gTot').textContent=A(s)+tea;
+  }
+  FIELDS.forEach(([id])=>$(id).addEventListener('input',liveSum));
+  liveSum();
   function drawAi(){
     const box2=$('#aiBox'),a=s.__ai;
     if(!aiReady&&!a){box2.innerHTML='<p class="tiny">AI 채점 초안을 쓰려면 스프레드시트에서 「수행평가 → AI 채점 → API 키 등록」을 먼저 실행하세요.</p>';return}
     const btn=`<button id="aiRun">${a?'AI 다시 채점':'AI 채점 초안 만들기'}</button>`;
-    if(!a){box2.innerHTML=`<div class="stack">${btn}<span class="tiny">답안 본문만 보내며 학번·이름은 전송하지 않습니다.</span></div>`}
+    if(!a){box2.innerHTML=`<div class="blk blk-a"><div class="cap"><i style="background:var(--teach)"></i>AI 채점 초안</div>
+      <div class="stack">${btn}<span class="tiny">답안 본문만 보내며 학번·이름은 전송하지 않습니다.</span></div></div>`}
     else{
       const tot=(+a.pred||0)+(+a.c1||0)+(+a.c2||0)+(+a.c3||0)+(+a.c4||0);
       const scored=['pred','c1','c2','c3','c4'].some(k=>t[k]!==undefined&&t[k]!=='');
       const gap=scored?Math.abs(tot-T(s)):null;
-      box2.innerHTML=`<div class="note ${a.confidence==='낮음'?'':'mint'}">
-        <b>AI 채점 초안 ${tot}/16</b> <span class="tag">확신 ${esc(a.confidence)||'–'}</span>
+      box2.innerHTML=`<div class="blk blk-a">
+        <div class="cap"><i style="background:var(--teach)"></i>AI 채점 초안 (참고용)<em>${tot} / 16점</em></div>
+        <span class="tag">확신 ${esc(a.confidence)||'–'}</span>
         ${gap!==null&&gap>=3?`<span class="tag t2">교사 점수와 ${gap}점 차이</span>`:''}
         <div style="margin-top:6px">문항3 <b>${a.pred}</b>/6 · ① <b>${a.c1}</b>/2 · ② <b>${a.c2}</b>/3 · ③ <b>${a.c3}</b>/3 · ④ <b>${a.c4}</b>/2</div>
         <div class="tiny" style="margin-top:6px">${escBr(a.note)}</div>
-        <div class="stack" style="margin-top:10px">${btn}<button id="aiApply">제안 적용</button></div>
-        <div class="tiny" style="margin-top:6px">이 점수는 초안입니다. 확인·수정한 뒤 아래에서 <b>채점 저장</b>을 눌러야 성적에 반영됩니다.</div></div>`;
-      $('#aiApply').onclick=()=>{FIELDS.forEach(([id,k])=>$(id).value=a[k]);
-        $('#gMsg').style.color='var(--ink-soft)';$('#gMsg').textContent='초안을 채점란에 넣었습니다. 확인한 뒤 저장하세요.'};
+        <div class="stack" style="margin-top:10px">${btn}<button id="aiApply">노란 칸에 옮겨 담기</button></div>
+        <div class="tiny" style="margin-top:6px">초안일 뿐입니다. 노란 칸에서 확인·수정한 뒤 <b>채점 저장</b>을 눌러야 성적에 반영됩니다.</div></div>`;
+      $('#aiApply').onclick=()=>{FIELDS.forEach(([id,k])=>$(id).value=a[k]);liveSum();
+        $('#gMsg').style.color='var(--ink-soft)';$('#gMsg').textContent='초안을 교사 입력 칸에 옮겼습니다. 확인한 뒤 저장하세요.'};
     }
     const run=$('#aiRun'); if(!run)return;
     run.onclick=async()=>{

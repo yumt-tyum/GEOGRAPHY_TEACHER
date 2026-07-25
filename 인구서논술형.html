@@ -186,6 +186,12 @@ th{font-family:'Jua',sans-serif;color:var(--ink-soft);font-size:12px}
     </div>
 
     <div class="q"><span class="pts">1점</span><b>문항 2.</b> 이 국가는 인구 변천 모형의 몇 단계에 해당하는가?</div>
+    <div class="row3" style="margin-bottom:12px">
+      <div class="metric"><div class="n" id="mCbr">–</div><div class="k">조출생률 (‰)</div></div>
+      <div class="metric"><div class="n" id="mCdr">–</div><div class="k">조사망률 (‰)</div></div>
+      <div class="metric"><div class="n" id="mTfr">–</div><div class="k">합계 출산율</div></div>
+    </div>
+    <p class="tiny" style="margin:-4px 4px 10px">조출생률·조사망률은 인구 1,000명당 한 해의 출생아 수와 사망자 수입니다.</p>
     <div class="sunken" style="margin-bottom:10px">
       <table><tbody>
         <tr><td><b>1단계</b> 고위 정체</td><td>출생률과 사망률이 모두 높음</td></tr>
@@ -209,7 +215,7 @@ th{font-family:'Jua',sans-serif;color:var(--ink-soft);font-size:12px}
         <li>아홉 계급에 100%를 남김없이 나누어 그릴 것 <span class="tiny">(합계는 100%를 넘을 수 없습니다)</span></li>
         <li>2025년 피라미드에서 <u>특정 연령 계급을 지목</u>하여, 그 집단이 2050년에 어느 계급으로 옮겨 가는지 밝힐 것</li>
         <li>합계 출산율과 기대 수명의 변화를 <u>모두</u> 근거로 삼을 것</li>
-        <li>200자 이상 서술할 것</li>
+        <li>100자 이상 서술할 것</li>
       </ol>
     </div>
     <div class="stack" style="margin-bottom:8px">
@@ -226,7 +232,7 @@ th{font-family:'Jua',sans-serif;color:var(--ink-soft);font-size:12px}
     </div>
     <label for="aPredR" style="margin-top:16px">예측의 근거</label>
     <textarea id="aPredR" placeholder="예) 2025년에 45~54세인 사람들은 2050년에 70대가 되므로 …"></textarea>
-    <div class="tiny" style="text-align:right"><span id="lenPred">0</span>자 / 200자 이상</div>
+    <div class="tiny" style="text-align:right"><span id="lenPred">0</span>자 / 100자 이상</div>
     <div class="stack" style="margin-top:18px;justify-content:space-between">
       <button class="ghost" id="b3Back">이전 문항</button><button class="primary" id="bSubmit">1차 제출</button>
     </div>
@@ -353,7 +359,7 @@ th{font-family:'Jua',sans-serif;color:var(--ink-soft);font-size:12px}
 /* ═══════════ 연결 설정 ═══════════
    Apps Script 웹 앱 URL을 아래 따옴표 안에 붙여넣으세요. (…/exec 로 끝나는 주소)
    비워 두면 브라우저 임시 저장소로 동작합니다(시험용, 응시 코드 검사 생략).       */
-const API_URL = "https://script.google.com/macros/s/AKfycbw3mrdD0p183gco0LmiwnoDdAxGSQHRqMnjIXhdSR4jL_qkFMebxp_eGRnQHJSEWzKbZw/exec";
+const API_URL = "";
 /* ════════════════════════════════ */
 
 const BANDS=['0~14','15~24','25~34','35~44','45~54','55~64','65~74','75~84','85+'];
@@ -362,12 +368,12 @@ const DENS=32, GRP=[0,1,1,1,1,1,2,2,2];
 const ORDER=['kr','de','fr','gh','ne','in'];
 const STAGE_KEY={kr:[5],de:[5],fr:[4,5],gh:[3],ne:[2],in:[3,4]};
 const BASE={
- kr:{name:'대한민국',flag:'🇰🇷',now:[548,576,638,707,783,868,650,304,94],fut:[377,353,411,478,557,648,719,719,454],tfr:[0.75,1.08],src:'통계청 「장래인구추계 2022~2072」 중위추계'},
- de:{name:'독일',flag:'🇩🇪',now:[1161,935,986,1040,1095,1154,930,732,317],fut:[1059,890,913,937,962,987,1009,908,605],tfr:[1.38,1.45],src:'UN World Population Prospects 2024 중위추계'},
- fr:{name:'프랑스',flag:'🇫🇷',now:[1132,790,797,803,810,816,726,529,257],fut:[1051,724,741,759,777,796,812,676,444],tfr:[1.62,1.65],src:'UN World Population Prospects 2024 중위추계'},
- gh:{name:'가나',flag:'🇬🇭',now:[1239,773,538,375,261,181,90,35,8],fut:[1326,981,806,662,545,448,209,96,27],tfr:[3.50,2.60],src:'UN World Population Prospects 2024 중위추계'},
- ne:{name:'니제르',flag:'🇳🇪',now:[1275,617,368,219,131,78,50,18,4],fut:[2436,1512,831,459,251,138,118,45,10],tfr:[5.80,4.20],src:'UN World Population Prospects 2024 중위추계'},
- in:{name:'인도',flag:'🇮🇳',now:[35258,28863,23610,19314,15798,12923,6531,3160,843],fut:[29225,24035,23266,22520,21800,21103,13778,8517,2756],tfr:[1.95,1.70],src:'UN World Population Prospects 2024 중위추계'}
+ kr:{name:'대한민국',flag:'🇰🇷',now:[548,576,638,707,783,868,650,304,94],fut:[377,353,411,478,557,648,719,719,454],tfr:[0.75,1.08],cbr:4.8,cdr:7.0,src:'통계청 「장래인구추계 2022~2072」 중위추계'},
+ de:{name:'독일',flag:'🇩🇪',now:[1161,935,986,1040,1095,1154,930,732,317],fut:[1059,890,913,937,962,987,1009,908,605],tfr:[1.38,1.45],cbr:8.1,cdr:12.1,src:'UN World Population Prospects 2024 중위추계'},
+ fr:{name:'프랑스',flag:'🇫🇷',now:[1132,790,797,803,810,816,726,529,257],fut:[1051,724,741,759,777,796,812,676,444],tfr:[1.62,1.65],cbr:9.9,cdr:9.5,src:'UN World Population Prospects 2024 중위추계'},
+ gh:{name:'가나',flag:'🇬🇭',now:[1239,773,538,375,261,181,90,35,8],fut:[1326,981,806,662,545,448,209,96,27],tfr:[3.50,2.60],cbr:22.9,cdr:7.1,src:'UN World Population Prospects 2024 중위추계'},
+ ne:{name:'니제르',flag:'🇳🇪',now:[1275,617,368,219,131,78,50,18,4],fut:[2436,1512,831,459,251,138,118,45,10],tfr:[5.80,4.20],cbr:43.5,cdr:8.3,src:'UN World Population Prospects 2024 중위추계'},
+ in:{name:'인도',flag:'🇮🇳',now:[35258,28863,23610,19314,15798,12923,6531,3160,843],fut:[29225,24035,23266,22520,21800,21103,13778,8517,2756],tfr:[1.95,1.70],cbr:15.7,cdr:6.6,src:'UN World Population Prospects 2024 중위추계'}
 };
 let DATA=JSON.parse(JSON.stringify(BASE));
 
@@ -504,6 +510,8 @@ function renderRead(){
   $('#rdTable').innerHTML='<table><thead><tr>'+BANDS.map(b=>`<th>${b}</th>`).join('')+
     '</tr></thead><tbody><tr>'+d.now.map(v=>`<td>${v.toLocaleString()}</td>`).join('')+'</tr></tbody></table>';
   $('#rdTot').textContent=popText(sum(d.now));$('#rdTfr').textContent=d.tfr[0].toFixed(2)+'명';
+  $('#mCbr').textContent=d.cbr.toFixed(1);$('#mCdr').textContent=d.cdr.toFixed(1);
+  $('#mTfr').textContent=d.tfr[0].toFixed(2);
 }
 let upd=null;
 function refreshPred(){
@@ -536,7 +544,7 @@ const num=s=>{const v=parseFloat($(s).value);return isNaN(v)?null:v};
 async function submit1(){
   const e=$('#e3');e.textContent='';
   if(Math.abs(sum(pred)-100)>0.05){e.textContent=`아직 ${r1(100-sum(pred)).toFixed(1)}%가 남았습니다. 남은 몫을 모두 나눠 주세요.`;return}
-  if($('#aPredR').value.trim().length<200){e.textContent='문항 3의 근거를 200자 이상 써 주세요.';return}
+  if($('#aPredR').value.trim().length<100){e.textContent='문항 3의 근거를 100자 이상 써 주세요.';return}
   const d=DATA[cty],t=indic(pct(d.now));
   const read={young:num('#aYoung'),work:num('#aWork'),old:num('#aOld'),dep:num('#aDep'),age:num('#aAge')};
   rec={sid:me.sid,name:me.name,pass:me.pass,cty,countryName:d.name,
@@ -558,7 +566,8 @@ async function check(){
   }catch(e){$('#waitPill').textContent='연결 확인 중…'}
 }
 function mergeData(d){Object.keys(d||{}).forEach(k=>{if(DATA[k]&&d[k].now&&d[k].fut){
-  DATA[k].now=d[k].now;DATA[k].fut=d[k].fut;if(d[k].tfr)DATA[k].tfr=[d[k].tfr.now,d[k].tfr.fut]}})}
+  DATA[k].now=d[k].now;DATA[k].fut=d[k].fut;if(d[k].tfr)DATA[k].tfr=[d[k].tfr.now,d[k].tfr.fut];
+  if(d[k].cbr)DATA[k].cbr=d[k].cbr;if(d[k].cdr)DATA[k].cdr=d[k].cdr}})}
 
 function openEssay(){
   const d=DATA[cty],now=pct(d.now),fut=pct(d.fut),t=indic(now),tf=indic(fut),f=x=>x===null?'–':x.toFixed(1);

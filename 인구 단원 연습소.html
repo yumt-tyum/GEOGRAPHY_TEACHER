@@ -129,6 +129,34 @@ button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:trans
 .warnbox.show{display:block}
 .warnbox .big{font-family:'Jua',sans-serif;font-size:20px;margin-bottom:6px}
 .footer{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:18px}
+
+/* 선택 화면 카드 */
+.choose-card{display:flex;align-items:center;gap:16px;width:100%;text-align:left;
+  background:var(--clay);border-radius:22px;box-shadow:var(--shadow-out);padding:20px;margin-bottom:14px;
+  border:2px solid #fff;outline:2px dashed var(--stitch);outline-offset:-7px;color:var(--ink);
+  transition:transform .08s, outline-color .2s}
+.choose-card:active{transform:scale(.99)}
+.choose-card:hover{outline-color:var(--orange)}
+.choose-card .ic{font-size:34px;flex:none;width:52px;height:52px;border-radius:16px;background:var(--clay-2);
+  box-shadow:var(--shadow-in);display:flex;align-items:center;justify-content:center}
+.choose-card .tx{font-size:16px;line-height:1.5}
+.choose-card .tx b{font-family:'Jua',sans-serif;font-size:18px;color:var(--red)}
+.choose-card .sub{font-size:13px;color:var(--ink-soft)}
+
+/* 감독 체험 떠다니는 버튼 */
+#proctorFab{position:fixed;right:16px;bottom:16px;z-index:50;font-family:'Jua',sans-serif;font-size:14px;
+  padding:12px 18px;border-radius:999px;color:#fff;background:linear-gradient(145deg,#EC8A83,#DD5E56);
+  box-shadow:5px 6px 15px rgba(150,110,60,.28),-3px -3px 9px rgba(255,255,255,.5)}
+#proctorFab:active{transform:scale(.97)}
+
+/* 모달 */
+.modal-back{position:fixed;inset:0;z-index:60;background:rgba(74,59,46,.4);
+  display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto}
+.modal{position:relative;background:var(--clay);border-radius:22px;box-shadow:var(--shadow-out);
+  border:2px solid #fff;outline:2px dashed var(--stitch);outline-offset:-7px;
+  padding:22px;max-width:520px;width:100%;margin-top:12px}
+.modal-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;
+  background:var(--clay-2);box-shadow:var(--shadow-sm);color:var(--ink-soft);font-size:15px;padding:0}
 .gate-err{display:none;margin:8px 2px 0;font-size:13px;color:var(--no);background:var(--no-bg);
   border-radius:12px;padding:9px 13px;box-shadow:var(--shadow-sm)}
 .gate-err.show{display:block}
@@ -148,11 +176,11 @@ button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:trans
     </div>
     <div class="card">
       <p class="qhead">코드로 입장</p>
-      <p class="prompt" style="font-size:14px">실제 평가처럼 <b>수업 코드</b>와 <b>모둠 코드</b>를 넣고 들어갑니다. 모둠 코드는 <b>반·모둠 네 자리</b>예요 — 예를 들어 <b>3반 5모둠</b>이면 <b>0305</b>. 같은 모둠원은 모두 같은 코드로 들어와요.</p>
+      <p class="prompt" style="font-size:14px">실제 평가와 똑같이, <b>선생님이 알려 준 코드</b>를 입력해야 들어갈 수 있어요. 같은 모둠원은 모두 <b>같은 모둠 코드</b>를 받습니다.</p>
       <label for="gClass">수업 코드</label>
-      <input id="gClass" class="txt" placeholder="예) SOC5P" autocapitalize="characters">
-      <label for="gCode" style="margin-top:12px">모둠 코드 (반반모둠모둠)</label>
-      <input id="gCode" class="txt" placeholder="예) 0305" inputmode="numeric" maxlength="4">
+      <input id="gClass" class="txt" placeholder="선생님이 알려 준 수업 코드" autocapitalize="characters">
+      <label for="gCode" style="margin-top:12px">모둠 코드</label>
+      <input id="gCode" class="txt" placeholder="선생님이 알려 준 모둠 코드" inputmode="numeric" maxlength="4">
       <p class="gate-err" id="gateErr"></p>
       <div class="stack" style="margin-top:14px"><button class="btn" id="bEnter">입장하기</button></div>
       <p class="footer" id="connState" style="text-align:left;margin-top:12px"></p>
@@ -160,15 +188,31 @@ button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:trans
   </section>
 
   <!-- ── 메인 ── -->
+  <!-- ── 선택 화면 ── -->
+  <section id="pChoose" class="hide">
+    <div class="topbar">
+      <span class="who" id="whoLabel2">모둠</span>
+      <button class="btn ghost" id="bBackGate">처음으로</button>
+    </div>
+    <div class="card hero">
+      <div class="jua" style="font-size:26px">무엇을 해볼까요?</div>
+      <p>하나를 골라 시작해요. 언제든 이 화면으로 돌아올 수 있어요.</p>
+    </div>
+    <button class="choose-card" id="goPyramid">
+      <span class="ic">🔺</span>
+      <span class="tx"><b>모둠 예측 대결</b><br><span class="sub">2050년 인구 피라미드를 그려 실제와 비교하고, 우리 모둠에서 누가 가장 정확한지 겨뤄요.</span></span>
+    </button>
+    <button class="choose-card" id="goConcept">
+      <span class="ic">📚</span>
+      <span class="tx"><b>개념 연습</b><br><span class="sub">지표 계산·피라미드 읽기·인구 변천 모형·개념 OX를 즉석 해설로 확인해요.</span></span>
+    </button>
+  </section>
+
+  <!-- ── 활동 화면 ── -->
   <section id="pMain" class="hide">
     <div class="topbar">
       <span class="who" id="whoLabel">모둠</span>
-      <button class="btn ghost" id="bBackGate">처음으로</button>
-    </div>
-    <div class="tabs" role="tablist">
-      <button role="tab" aria-selected="true" data-tab="tabPyramid">🔺 모둠 예측 대결</button>
-      <button role="tab" aria-selected="false" data-tab="tabConcept">📚 개념 연습</button>
-      <button role="tab" aria-selected="false" data-tab="tabProctor">👀 감독 체험</button>
+      <button class="btn ghost" id="bBackChoose">← 선택으로</button>
     </div>
 
     <!-- 모둠 예측 대결 -->
@@ -181,10 +225,16 @@ button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:trans
       <div class="sec-title">③ 인구 변천 모형</div><div id="t3"></div>
       <div class="sec-title">④ 개념 OX</div><div id="t4"></div>
     </div>
-
-    <!-- 감독 체험 -->
-    <div id="tabProctor" class="panel" hidden></div>
   </section>
+
+  <!-- ── 감독 체험: 떠다니는 버튼 + 설명/체험 모달 ── -->
+  <button id="proctorFab" class="hide">👀 감독 체험</button>
+  <div id="proctorModal" class="modal-back hide">
+    <div class="modal">
+      <button class="modal-x" id="proctorClose" aria-label="닫기">✕</button>
+      <div id="proctorBody"></div>
+    </div>
+  </div>
 
   <p class="footer">틀려도 괜찮아요. 해설을 읽고 다시 해보면 됩니다.<br>여기서 익힌 감각과 규칙을 실제 수행평가에서 써먹어요.</p>
 </div>
@@ -251,34 +301,45 @@ $('#bEnter').onclick=()=>{
   const raw=($('#gCode').value||'').trim();
   const err=$('#gateErr');
   if(clsRaw.toUpperCase()!==CLASS_CODE.toUpperCase()){
-    err.textContent='수업 코드가 맞지 않아요. 선생님이 알려 준 수업 코드를 확인하세요.';
+    err.textContent='수업 코드가 맞지 않아요. 선생님이 알려 준 코드를 다시 확인하세요.';
     err.classList.add('show'); $('#gClass').focus(); $('#gClass').select(); return;
   }
   if(!raw){ $('#gCode').focus(); return; }
   const p=parseCode(raw);
   if(!p || !GROUP_CODES.includes(p.code)){
-    err.textContent='입장할 수 없는 모둠 코드예요. 반·모둠 네 자리를 확인하세요. (예: 3반 5모둠 → 0305)';
+    err.textContent='입장할 수 없는 코드예요. 선생님이 알려 준 모둠 코드를 다시 확인하세요.';
     err.classList.add('show'); $('#gCode').focus(); $('#gCode').select(); return;
   }
   err.classList.remove('show');
   groupCode=p.code; myClass=p.cls; myGroup=p.grp;
-  $('#whoLabel').textContent='🧩 '+p.cls+'반 '+p.grp+'모둠';
-  $('#pGate').classList.add('hide'); $('#pMain').classList.remove('hide');
-  renderPyramid();
+  const label='🧩 '+p.cls+'반 '+p.grp+'모둠';
+  $('#whoLabel').textContent=label; $('#whoLabel2').textContent=label;
+  $('#pGate').classList.add('hide');
+  $('#pChoose').classList.remove('hide');
+  $('#proctorFab').classList.remove('hide');   // 입장 후엔 감독 체험 버튼이 늘 따라다님
   scrollTo(0,0);
 };
 $('#gCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#bEnter').click(); });
-$('#bBackGate').onclick=()=>{ demoStop(); $('#pMain').classList.add('hide'); $('#pGate').classList.remove('hide'); scrollTo(0,0); };
 
-/* ── 탭 ── */
-$$('.tabs button').forEach(b=>{
-  b.onclick=()=>{
-    $$('.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
-    $$('.panel').forEach(p=>p.hidden=(p.id!==b.dataset.tab));
-    if(b.dataset.tab!=='tabProctor') demoStop();  // 다른 탭 가면 감독 체험 해제
-    scrollTo(0,0);
-  };
-});
+/* ── 화면 이동 ── */
+function openActivity(which){
+  $('#pChoose').classList.add('hide');
+  $('#pMain').classList.remove('hide');
+  $('#tabPyramid').hidden = (which!=='pyramid');
+  $('#tabConcept').hidden = (which!=='concept');
+  if(which==='pyramid') renderPyramid();
+  scrollTo(0,0);
+}
+$('#goPyramid').onclick=()=>openActivity('pyramid');
+$('#goConcept').onclick=()=>openActivity('concept');
+$('#bBackChoose').onclick=()=>{ $('#pMain').classList.add('hide'); $('#pChoose').classList.remove('hide'); scrollTo(0,0); };
+$('#bBackGate').onclick=()=>{
+  demoStop();
+  $('#pChoose').classList.add('hide'); $('#pMain').classList.add('hide');
+  $('#proctorFab').classList.add('hide');
+  $('#pGate').classList.remove('hide');
+  scrollTo(0,0);
+};
 
 /* ════════ 모둠 예측 대결 ════════ */
 const BANDS=['0~9','10~19','20~29','30~39','40~49','50~59','60~69','70~79','80+'];
@@ -482,45 +543,56 @@ async function showCompare(){
   if(box.scrollIntoView) box.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-/* ════════ 감독 체험 ════════ */
+/* ════════ 감독 체험 (떠다니는 버튼 + 모달) ════════ */
 let demoOn=false, demoLeft=false;
-function renderProctor(){
-  const wrap=$('#tabProctor');
-  wrap.innerHTML=`
-    <div class="card">
-      <p class="qhead">감독 기능, 미리 겪어보기</p>
-      <p class="prompt" style="font-size:14px">실제 <b>논술 작성 중</b>에는 화면을 벗어나 다른 앱을 켜면 <b>자동으로 제출</b>되고 잠깁니다.
-      연습에서는 <u>실제 제출은 하지 않고</u> 경고만 띄워 보여 줄게요.</p>
-      <div class="data" style="font-size:13.5px">
-        <b>체험 방법</b><br>
-        ① 아래 <b>‘감독 켜기’</b>를 누른다 →<br>
-        ② 태블릿 <b>홈 버튼을 눌러 다른 화면으로</b> 나갔다가 →<br>
-        ③ 다시 이 앱으로 <b>돌아온다</b>.
-      </div>
-      <div class="row-actions">
-        <button class="btn red" id="bDemoOn">감독 켜기</button>
-        <button class="btn ghost" id="bDemoPeek">경고 화면만 미리 보기</button>
-      </div>
-      <p class="footer" id="demoState" style="text-align:left;margin-top:8px">감독이 꺼져 있어요.</p>
-      <div class="warnbox" id="demoWarn">
-        <div class="big">⚠ 화면을 벗어났어요!</div>
-        <div>실제 평가였다면 지금 <b>자동으로 제출</b>되고 더 이상 고칠 수 없었을 거예요.<br>시험 중에는 다른 앱을 켜지 않도록 조심해요.</div>
-        <div class="row-actions" style="justify-content:center;margin-top:12px">
-          <button class="btn" id="bDemoOk" style="background:#fff;color:var(--red)">알겠어요</button>
-        </div>
+
+function openProctor(showWarn){
+  $('#proctorBody').innerHTML=`
+    <p class="qhead" style="font-size:18px">👀 감독 체험이란?</p>
+    <p class="prompt" style="font-size:14px">실제 수행평가에서는 <b>논술을 쓰는 동안</b> 화면을 벗어나 다른 앱(검색·메신저 등)을 켜면,
+    <b>화면을 벗어난 것으로 감지되어 자동으로 제출</b>되고 답안이 잠깁니다. 부정행위를 막기 위한 장치예요.</p>
+    <p class="prompt" style="font-size:14px">여기서는 그 느낌만 <u>안전하게 미리</u> 겪어 봅니다. 실제로 제출되거나 잠기지 않으니 마음 놓고 눌러 보세요.</p>
+    <div class="data" style="font-size:13.5px">
+      <b>체험 방법</b><br>
+      ① 아래 <b>‘감독 켜기’</b>를 누른다 →<br>
+      ② 태블릿 <b>홈 버튼을 눌러 다른 화면으로</b> 나갔다가 →<br>
+      ③ 다시 이 앱으로 <b>돌아온다</b> → 경고가 뜹니다.
+    </div>
+    <div class="row-actions">
+      <button class="btn red" id="bDemoOn">${demoOn?'감독 끄기':'감독 켜기'}</button>
+      <button class="btn ghost" id="bDemoPeek">경고 화면만 미리 보기</button>
+    </div>
+    <p class="footer" id="demoState" style="text-align:left;margin-top:8px">${demoOn?'감독이 켜졌어요. 이제 홈 버튼으로 나갔다 돌아와 보세요.':'감독이 꺼져 있어요.'}</p>
+    <div class="warnbox${showWarn?' show':''}" id="demoWarn">
+      <div class="big">⚠ 화면을 벗어났어요!</div>
+      <div>실제 평가였다면 지금 <b>자동으로 제출</b>되고 더 이상 고칠 수 없었을 거예요.<br>시험 중에는 다른 앱을 켜지 않도록 조심해요.</div>
+      <div class="row-actions" style="justify-content:center;margin-top:12px">
+        <button class="btn" id="bDemoOk" style="background:#fff;color:var(--red)">알겠어요</button>
       </div>
     </div>`;
-  $('#bDemoOn',wrap).onclick=()=>{ demoOn?demoStop():demoStart(); };
-  $('#bDemoPeek',wrap).onclick=()=>{ $('#demoWarn').classList.add('show'); };
-  $('#bDemoOk',wrap).onclick=()=>{ $('#demoWarn').classList.remove('show'); };
+  $('#bDemoOn').onclick=()=>{ demoOn?demoStop():demoStart(); };
+  $('#bDemoPeek').onclick=()=>{ $('#demoWarn').classList.add('show'); };
+  $('#bDemoOk').onclick=()=>{ $('#demoWarn').classList.remove('show'); };
+  $('#proctorModal').classList.remove('hide');
 }
+function closeProctor(){ $('#proctorModal').classList.add('hide'); }
 function demoStart(){ demoOn=true; demoLeft=false;
-  $('#bDemoOn').textContent='감독 끄기'; $('#demoState').textContent='감독이 켜졌어요. 이제 홈 버튼으로 나갔다 돌아와 보세요.'; }
-function demoStop(){ if(!demoOn)return; demoOn=false; demoLeft=false;
-  const b=$('#bDemoOn'); if(b)b.textContent='감독 켜기'; const s=$('#demoState'); if(s)s.textContent='감독이 꺼져 있어요.'; }
+  const b=$('#bDemoOn'); if(b)b.textContent='감독 끄기';
+  const s=$('#demoState'); if(s)s.textContent='감독이 켜졌어요. 이제 홈 버튼으로 나갔다 돌아와 보세요.'; }
+function demoStop(){ demoOn=false; demoLeft=false;
+  const b=$('#bDemoOn'); if(b)b.textContent='감독 켜기';
+  const s=$('#demoState'); if(s)s.textContent='감독이 꺼져 있어요.'; }
+
+$('#proctorFab').onclick=openProctor;
+$('#proctorClose').onclick=closeProctor;
+$('#proctorModal').addEventListener('click',e=>{ if(e.target===$('#proctorModal')) closeProctor(); });
+
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){ if(demoOn) demoLeft=true; }
-  else if(demoOn && demoLeft){ demoLeft=false; $('#demoWarn').classList.add('show'); }
+  else if(demoOn && demoLeft){ demoLeft=false;
+    if($('#proctorModal').classList.contains('hide')){ openProctor(true); }   // 닫혀 있었으면 경고와 함께 다시 열기
+    else { $('#demoWarn').classList.add('show'); }
+  }
 });
 
 /* ════════ 개념 연습 (① 지표 · ② 피라미드 · ③ 변천 · ④ OX) ════════ */
@@ -660,12 +732,10 @@ function wireChoice(c,q){
 }
 
 /* ── 초기 렌더 ── */
-renderPyramid(); renderProctor();
 renderCalc(); renderPyrQ(); renderStage(); renderOx();
 
 /* 연결 상태 표시 */
 (function(){
-  const gc=$('#gClass'); if(gc && !gc.value) gc.value=CLASS_CODE;   // 수업 코드 미리 채움
   const el=$('#connState'); if(!el) return;
   if(apiUrl){ el.innerHTML='🔗 서버에 연결됨 — 모둠원이 각자 기기에서 넣은 예측이 함께 모입니다.';
     api('ping',{}).catch(()=>{ el.innerHTML='⚠ 서버 주소가 있지만 응답이 없어요. 배포 상태를 확인하세요.'; }); }

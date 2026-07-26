@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FBF6EA">
+<title>인구 단원 연습소 · 모둠 체험판</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap');
+:root{
+  --bg:#FBF6EA;--clay:#FFFDF7;--clay-2:#FBF3E4;--ink:#4A3B2E;--ink-soft:#9A8264;--line:#EADFC8;
+  --stitch:#E6D8BC;
+  --red:#E0655E;--orange:#EFA043;--yellow:#F2C94C;--green:#7FC08A;--blue:#6FB0D6;
+  --young:#F4A0A6;--work:#8DCB8E;--old:#6FB0D6;
+  --ok:#5DA96A;--ok-bg:#DDEFE0;--no:#D9756E;--no-bg:#F7DEDB;
+  --shadow-out:5px 6px 15px rgba(150,110,60,.15),-4px -4px 11px rgba(255,255,255,.85);
+  --shadow-in:inset 4px 4px 9px rgba(150,110,60,.14),inset -4px -4px 9px rgba(255,255,255,.9);
+  --shadow-sm:3px 3px 8px rgba(150,110,60,.13),-2px -2px 7px rgba(255,255,255,.8);
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{color:var(--ink);font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  font-size:15px;line-height:1.7;-webkit-text-size-adjust:100%;background-color:#FBF6EA;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(224,101,94,.05) 0 2px, transparent 2px 46px),
+    repeating-linear-gradient(0deg,  rgba(127,192,138,.06) 0 2px, transparent 2px 46px),
+    repeating-linear-gradient(90deg, rgba(111,176,214,.045) 0 22px, transparent 22px 46px),
+    repeating-linear-gradient(0deg,  rgba(242,201,76,.05) 0 22px, transparent 22px 46px);
+  background-attachment:fixed;}
+.jua{font-family:'Jua','Gowun Dodum',sans-serif}
+.hide{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 90px}
+.card{background:var(--clay);border-radius:22px;box-shadow:var(--shadow-out);padding:20px;margin-bottom:16px;
+  border:2px solid #fff;outline:2px dashed var(--stitch);outline-offset:-7px;transition:outline-color .2s}
+.card.ok{outline-color:var(--ok)} .card.no{outline-color:var(--no)}
+.hero{text-align:center;background:linear-gradient(160deg,#FFFDF7,#FBF0DC)}
+.hero h1{font-family:'Jua',sans-serif;font-size:24px;margin:.2em 0 .1em}
+.hero p{color:var(--ink-soft);font-size:13.5px;margin:.2em 0}
+.badge{display:inline-block;background:#FBEFD6;color:#8A6A2E;border-radius:999px;padding:3px 13px;font-size:12px;margin-top:6px}
+label{display:block;font-size:13px;color:var(--ink-soft);margin:10px 0 5px}
+input.txt{width:100%;font-family:inherit;font-size:16px;padding:11px 13px;border:0;border-radius:13px;
+  background:var(--clay-2);box-shadow:var(--shadow-in);color:var(--ink)}
+textarea{width:100%;font-family:inherit;font-size:15px;padding:11px 13px;border:0;border-radius:13px;
+  background:var(--clay-2);box-shadow:var(--shadow-in);color:var(--ink);resize:vertical;min-height:70px}
+button{font-family:inherit;cursor:pointer;border:0}
+.btn{font-size:15px;font-weight:bold;padding:12px 22px;border-radius:15px;box-shadow:var(--shadow-sm);color:#fff;
+  background:linear-gradient(145deg,#8FCF95,#5DA96A)}
+.btn.orange{background:linear-gradient(145deg,#EFA043,#E28B3C)}
+.btn.red{background:linear-gradient(145deg,#EC8A83,#DD5E56)}
+.btn.ghost{background:transparent;box-shadow:none;color:var(--ink-soft);text-decoration:underline;font-weight:normal;padding:8px 12px}
+.btn:disabled{opacity:.45;cursor:default}
+.stack{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 4px}
+.topbar .who{font-family:'Jua',sans-serif;color:var(--red);font-size:15px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:20;padding:10px 0 6px;
+  background:linear-gradient(#FBF6EA 70%,rgba(251,246,234,0))}
+.tabs button{flex:1 1 auto;min-width:110px;font-size:13.5px;padding:11px 8px;border-radius:15px;
+  background:var(--clay);color:var(--ink-soft);box-shadow:var(--shadow-sm)}
+.tabs button[aria-selected="true"]{background:linear-gradient(145deg,#EFA043,#E28B3C);color:#fff;font-weight:bold}
+.panel[hidden]{display:none}
+
+.qhead{font-family:'Jua',sans-serif;font-size:16px;color:var(--red);margin:0 0 4px}
+.qnum{font-size:12px;color:var(--ink-soft);letter-spacing:1px}
+.sec-title{font-family:'Jua',sans-serif;font-size:18px;color:var(--orange);margin:22px 4px 8px;padding-top:6px}
+.prompt{margin:8px 0 12px}
+.data{background:var(--clay-2);border-radius:16px;box-shadow:var(--shadow-in);padding:12px 15px;margin:10px 0;font-size:14.5px}
+.data table{width:100%;border-collapse:collapse}
+.data td,.data th{padding:5px 6px;text-align:center;border-bottom:1px solid var(--line);font-size:14px}
+.data th{color:var(--ink-soft);font-weight:normal} .data tr:last-child td{border-bottom:0}
+input.num{font-family:inherit;font-size:16px;width:120px;padding:10px 12px;border:0;border-radius:13px;
+  background:var(--clay-2);box-shadow:var(--shadow-in);color:var(--ink);text-align:center}
+.opts{display:flex;flex-direction:column;gap:9px;margin:6px 0}.opts.row{flex-direction:row;flex-wrap:wrap}
+.opt{cursor:pointer;font-size:14.5px;text-align:left;padding:12px 15px;border-radius:15px;background:var(--clay);
+  color:var(--ink);box-shadow:var(--shadow-sm);line-height:1.5}
+.opts.row .opt{flex:1 1 0;text-align:center;min-width:60px}
+.opt:disabled{cursor:default}
+.opt.pick-ok{background:linear-gradient(145deg,#9BD6A2,#6DB077);color:#fff}
+.opt.pick-no{background:linear-gradient(145deg,#E79A94,#D9756E);color:#fff}
+.opt.reveal-ok{outline:2.5px solid var(--ok);outline-offset:-2px}
+.stagebtns .opt{flex:1 1 0;text-align:center;min-width:56px;font-family:'Jua',sans-serif}
+.ox{display:flex;gap:12px;margin:6px 0}
+.ox .opt{flex:1;text-align:center;font-family:'Jua',sans-serif;font-size:20px;padding:14px}
+button.check{font-size:14.5px;font-weight:bold;padding:11px 20px;border-radius:14px;color:#fff;
+  background:linear-gradient(145deg,#8FCF95,#5DA96A);box-shadow:var(--shadow-sm)}
+button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:transparent;color:var(--ink-soft);text-decoration:underline;margin-left:6px}
+.row-actions{display:flex;align-items:center;margin-top:10px;flex-wrap:wrap;gap:6px}
+.feedback{margin-top:12px;border-radius:16px;padding:12px 15px;font-size:14px;box-shadow:var(--shadow-sm);display:none}
+.feedback.show{display:block}.feedback.good{background:var(--ok-bg)}.feedback.bad{background:var(--no-bg)}
+.feedback b{font-family:'Jua',sans-serif}
+.formula{font-size:13px;color:var(--ink-soft);background:#FBEFD6;border-radius:12px;padding:8px 12px;margin:8px 0;display:none}
+.formula.show{display:block}
+.hintbtn{background:transparent;color:var(--blue);text-decoration:underline;font-size:13px;padding:2px 0}
+
+/* 피라미드 */
+.pyr{background:var(--clay-2);border-radius:16px;box-shadow:var(--shadow-in);padding:12px 14px;margin:10px 0}
+.pyr .band{display:flex;align-items:center;gap:8px;margin:3px 0}
+.pyr .lab{width:56px;font-size:12px;color:var(--ink-soft);text-align:right;flex:none}
+.pyr .track{flex:1}
+.pyr .bar{height:15px;border-radius:0 7px 7px 0;background:linear-gradient(90deg,#F4A0A6,#EC8A90)}
+.pyr .bar.actual{background:linear-gradient(90deg,#8DCB8E,#6DB077)}
+.pyr .val{width:40px;font-size:11.5px;color:var(--ink-soft);flex:none;text-align:left}
+.pyr .num{width:64px}
+
+.editrow{display:flex;align-items:center;gap:8px;margin:4px 0}
+.editrow .lab{width:56px;font-size:12px;color:var(--ink-soft);text-align:right;flex:none}
+.editrow .track{flex:1;background:var(--clay-2);border-radius:8px;box-shadow:var(--shadow-in);height:16px;overflow:hidden}
+.editrow .track>span{display:block;height:100%;background:linear-gradient(90deg,#F4A0A6,#EC8A90);width:0%}
+.editrow input{width:60px;text-align:center;font-family:inherit;font-size:15px;padding:6px;border:0;border-radius:10px;
+  background:var(--clay);box-shadow:var(--shadow-sm)}
+.budget{font-family:'Jua',sans-serif;text-align:center;font-size:15px;margin:8px 0;padding:8px;border-radius:12px;background:#FBEFD6}
+.budget.ok{background:var(--ok-bg);color:var(--ok)} .budget.over{background:var(--no-bg);color:var(--no)}
+
+.memberchip{display:inline-flex;align-items:center;gap:6px;background:var(--clay-2);box-shadow:var(--shadow-sm);
+  border-radius:999px;padding:6px 13px;margin:4px 6px 4px 0;font-size:13.5px}
+.rank{border-radius:16px;padding:12px 15px;margin:8px 0;box-shadow:var(--shadow-sm);background:var(--clay-2)}
+.rank.win{background:var(--ok-bg);outline:2px dashed var(--ok);outline-offset:-6px}
+.rank .name{font-family:'Jua',sans-serif}
+.rank .mae{float:right;color:var(--ink-soft);font-size:13px}
+.warnbox{background:linear-gradient(145deg,#EC8A83,#DD5E56);color:#fff;border-radius:18px;padding:18px;
+  text-align:center;box-shadow:var(--shadow-out);display:none}
+.warnbox.show{display:block}
+.warnbox .big{font-family:'Jua',sans-serif;font-size:20px;margin-bottom:6px}
+.footer{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:18px}
+@media (max-width:480px){ .tabs button{min-width:0;font-size:12.5px;padding:10px 4px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── 게이트: 모둠 코드 ── -->
+  <section id="pGate">
+    <div class="card hero">
+      <div class="jua" style="font-size:30px">🧩</div>
+      <h1>인구 단원 연습소 · 모둠 체험판</h1>
+      <p>실제 수행평가가 어떻게 돌아가는지 모둠끼리 미리 체험해요.</p>
+      <span class="badge">연습용 · 점수는 저장되지 않아요</span>
+    </div>
+    <div class="card">
+      <p class="qhead">모둠 코드로 입장</p>
+      <p class="prompt" style="font-size:14px">실제 평가처럼 <b>코드를 입력</b>하고 들어갑니다. 우리 반은 모둠마다 코드가 하나씩이라, <b>같은 모둠원은 모두 같은 코드</b>로 들어와요.</p>
+      <label for="gCode">모둠 코드</label>
+      <input id="gCode" class="txt" placeholder="예) 3모둠" autocapitalize="off">
+      <div class="stack" style="margin-top:14px"><button class="btn" id="bEnter">입장하기</button></div>
+      <p class="footer" id="connState" style="text-align:left;margin-top:12px"></p>
+    </div>
+  </section>
+
+  <!-- ── 메인 ── -->
+  <section id="pMain" class="hide">
+    <div class="topbar">
+      <span class="who" id="whoLabel">모둠</span>
+      <button class="btn ghost" id="bBackGate">처음으로</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="tabPyramid">🔺 모둠 예측 대결</button>
+      <button role="tab" aria-selected="false" data-tab="tabConcept">📚 개념 연습</button>
+      <button role="tab" aria-selected="false" data-tab="tabProctor">👀 감독 체험</button>
+    </div>
+
+    <!-- 모둠 예측 대결 -->
+    <div id="tabPyramid" class="panel"></div>
+
+    <!-- 개념 연습 -->
+    <div id="tabConcept" class="panel" hidden>
+      <div class="sec-title">① 인구 지표 계산</div><div id="t1"></div>
+      <div class="sec-title">② 인구 피라미드 읽기</div><div id="t2"></div>
+      <div class="sec-title">③ 인구 변천 모형</div><div id="t3"></div>
+      <div class="sec-title">④ 개념 OX</div><div id="t4"></div>
+    </div>
+
+    <!-- 감독 체험 -->
+    <div id="tabProctor" class="panel" hidden></div>
+  </section>
+
+  <p class="footer">틀려도 괜찮아요. 해설을 읽고 다시 해보면 됩니다.<br>여기서 익힌 감각과 규칙을 실제 수행평가에서 써먹어요.</p>
+</div>
+
+<script>
+/* ┌──────────────────────────────────────────────┐
+   │  Apps Script 연결                              │
+   │  아래 따옴표 안에 배포한 /exec 주소를 넣으세요.  │
+   │  비워 두면 서버 없이 이 기기 안에서만 작동합니다. │
+   └──────────────────────────────────────────────┘ */
+const API_URL = "";
+
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const apiUrl=(new URLSearchParams(location.search).get('api'))||API_URL;
+
+async function api(action,q){
+  const res=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(Object.assign({action},q))});
+  if(!res.ok) throw new Error('서버 응답 '+res.status);
+  const data=await res.json();
+  if(!data.ok) throw new Error(data.error||'오류');
+  return data;
+}
+
+let groupCode='';
+/* ── 게이트 → 메인 ── */
+$('#bEnter').onclick=()=>{
+  const code=($('#gCode').value||'').trim();
+  if(!code){ $('#gCode').focus(); return; }
+  groupCode=code;
+  $('#whoLabel').textContent='🧩 '+code;
+  $('#pGate').classList.add('hide'); $('#pMain').classList.remove('hide');
+  renderPyramid();  // 입장 후 (서버가 있으면 기존 제출을 불러오도록) 다시 그림
+  scrollTo(0,0);
+};
+$('#gCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#bEnter').click(); });
+$('#bBackGate').onclick=()=>{ demoStop(); $('#pMain').classList.add('hide'); $('#pGate').classList.remove('hide'); scrollTo(0,0); };
+
+/* ── 탭 ── */
+$$('.tabs button').forEach(b=>{
+  b.onclick=()=>{
+    $$('.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b?'true':'false'));
+    $$('.panel').forEach(p=>p.hidden=(p.id!==b.dataset.tab));
+    if(b.dataset.tab!=='tabProctor') demoStop();  // 다른 탭 가면 감독 체험 해제
+    scrollTo(0,0);
+  };
+});
+
+/* ════════ 모둠 예측 대결 ════════ */
+const BANDS=['0~9','10~19','20~29','30~39','40~49','50~59','60~69','70~79','80+'];
+// 대한민국 2050년 중위추계 근사치 (9개 계급, 합 100)
+const ACTUAL=[5,6,8,9,11,13,15,16,17];
+const ACTUAL_NAME='대한민국 2050년 (통계청 중위추계 근사)';
+let members=[];   // {name, pred[9], reason}
+
+function pyrBars(vals, actual=false){
+  const max=Math.max(...vals, ...ACTUAL);
+  return `<div class="pyr">${vals.map((v,i)=>`
+    <div class="band"><span class="lab">${BANDS[i]}</span>
+      <span class="track"><span class="bar ${actual?'actual':''}" style="width:${Math.round(v/max*100)}%"></span></span>
+      <span class="val">${v}%</span></div>`).join('')}</div>`;
+}
+function mae(pred){ return pred.reduce((s,v,i)=>s+Math.abs(v-ACTUAL[i]),0)/pred.length; }
+
+function renderPyramid(){
+  const wrap=$('#tabPyramid'); wrap.innerHTML='';
+
+  // 안내 카드
+  const info=document.createElement('div'); info.className='card';
+  info.innerHTML=`<p class="qhead">모둠 예측 대결이란?</p>
+    <p class="prompt" style="font-size:14px">실제 평가에서는 각자 배정된 나라의 <b>2050년 인구 피라미드</b>를 직접 그리고, 그다음 <b>실제 추계</b>와 비교합니다.
+    여기서는 모둠이 함께 연습해요. 순서를 정해 <b>한 명씩</b> 자기 예측을 입력한 뒤, 마지막에 <b>누가 실제와 가장 비슷했는지</b> 겨뤄 봅니다.</p>
+    <div class="data" style="font-size:13px">규칙은 실제 평가와 같아요 — 아홉 칸의 합이 <b>정확히 100%</b>가 되어야 제출할 수 있습니다.</div>`;
+  wrap.appendChild(info);
+
+  // 입력 카드
+  const form=document.createElement('div'); form.className='card';
+  form.innerHTML=`
+    <p class="qhead"><span id="turnLabel">첫 번째</span> 모둠원 예측 입력</p>
+    <label>이름</label><input class="txt" id="pName" placeholder="예) 김서연">
+    <label style="margin-top:12px">2050년 각 연령대의 비율(%)을 정해요 — 합이 100이 되도록</label>
+    <div id="editBands"></div>
+    <div class="budget" id="budget">합계 0% / 100%</div>
+    <label>이렇게 예측한 까닭 (선택)</label>
+    <textarea id="pReason" placeholder="예) 지금 40대가 두꺼우니 25년 뒤엔 60~70대가 커질 것 같다"></textarea>
+    <div class="row-actions">
+      <button class="btn" id="bAddMember" disabled>이 예측 제출</button>
+      <button class="btn ghost" id="bEven">균등하게 채우기</button>
+    </div>`;
+  wrap.appendChild(form);
+
+  // 밴드 입력 렌더
+  const eb=$('#editBands',form);
+  let pred=Array(9).fill(0);
+  eb.innerHTML=BANDS.map((b,i)=>`
+    <div class="editrow"><span class="lab">${b}</span>
+      <span class="track"><span data-bar="${i}"></span></span>
+      <input type="number" inputmode="numeric" min="0" max="100" data-in="${i}" value="0"></div>`).join('');
+  function refresh(){
+    const total=pred.reduce((a,b)=>a+b,0);
+    $$('[data-bar]',eb).forEach(s=>{ const i=+s.dataset.bar; s.style.width=Math.min(100,pred[i])+'%'; });
+    const bg=$('#budget',form);
+    if(total===100){ bg.className='budget ok'; bg.textContent='합계 100% — 제출할 수 있어요 ✓'; }
+    else if(total>100){ bg.className='budget over'; bg.textContent=`합계 ${total}% — ${total-100}% 초과예요`; }
+    else{ bg.className='budget'; bg.textContent=`합계 ${total}% / 100% — ${100-total}% 남음`; }
+    $('#bAddMember',form).disabled=(total!==100);
+  }
+  $$('[data-in]',eb).forEach(inp=>inp.addEventListener('input',()=>{
+    let v=parseInt(inp.value,10); if(isNaN(v))v=0; v=Math.max(0,Math.min(100,v));
+    inp.value=v; pred[+inp.dataset.in]=v; refresh();
+  }));
+  $('#bEven',form).onclick=()=>{ pred=[11,11,11,11,11,11,11,11,12];
+    $$('[data-in]',eb).forEach(inp=>inp.value=pred[+inp.dataset.in]); refresh(); };
+
+  $('#bAddMember',form).onclick=async()=>{
+    const name=($('#pName',form).value||'').trim()||('모둠원 '+(members.length+1));
+    const reason=($('#pReason',form).value||'').trim();
+    const myPred=pred.slice();
+    const btn=$('#bAddMember',form);
+    if(apiUrl){
+      btn.disabled=true; btn.textContent='저장 중…';
+      try{ await api('submit',{code:groupCode, name, pred:myPred, reason}); }
+      catch(e){ alert('저장하지 못했어요 — '+e.message); btn.disabled=false; btn.textContent='이 예측 제출'; return; }
+      btn.textContent='이 예측 제출';
+      await loadMembers();          // 서버에서 최신 목록 반영
+    } else {
+      members.push({name, pred:myPred, reason});
+    }
+    // 초기화 (다음 모둠원)
+    pred=Array(9).fill(0);
+    $('#pName',form).value=''; $('#pReason',form).value='';
+    $$('[data-in]',eb).forEach(inp=>inp.value=0);
+    refresh();
+    $('#turnLabel',form).textContent=['첫 번째','두 번째','세 번째','네 번째','다섯 번째','여섯 번째'][members.length]||(members.length+1)+'번째';
+    paintMembers();
+  };
+  refresh();
+
+  // 제출된 모둠원 + 비교 버튼
+  const list=document.createElement('div'); list.className='card'; list.id='memberCard';
+  wrap.appendChild(list);
+  paintMembers();
+
+  // 결과 영역
+  const result=document.createElement('div'); result.id='pyrResult'; wrap.appendChild(result);
+
+  // 서버가 있으면 이미 올라온 모둠원 예측을 불러온다
+  if(apiUrl && groupCode){ loadMembers(); }
+}
+
+/** 서버에서 우리 모둠 예측 전체를 가져와 members 갱신 */
+async function loadMembers(){
+  if(!apiUrl) return;
+  try{
+    const r=await api('members',{code:groupCode});
+    members=(r.members||[]).filter(m=>Array.isArray(m.pred)&&m.pred.length===9);
+    paintMembers();
+  }catch(e){ /* 조용히 무시 — 로컬 상태 유지 */ }
+}
+
+function paintMembers(){
+  const list=$('#memberCard'); if(!list) return;
+  const refreshBtn = apiUrl ? '<button class="btn ghost" id="bReload">새로고침</button>' : '';
+  if(!members.length){
+    list.innerHTML=`<p class="qhead">제출한 모둠원</p>
+      <p class="prompt" style="font-size:14px;color:var(--ink-soft);margin:0">${apiUrl
+        ? '아직 올라온 예측이 없어요. 각자 기기에서 예측을 제출하면 여기 모입니다.'
+        : '아직 제출한 모둠원이 없어요. 위에서 한 명씩 예측을 입력해 제출하세요.'}</p>
+      ${apiUrl?`<div class="row-actions">${refreshBtn}</div>`:''}`;
+    if(apiUrl){ const rb=$('#bReload',list); if(rb) rb.onclick=loadMembers; }
+    return;
+  }
+  list.innerHTML=`<p class="qhead">제출한 모둠원 (${members.length}명)</p>
+    <div>${members.map((m,i)=>`<span class="memberchip">🙋 ${esc(m.name)}${apiUrl?'':` <button data-del="${i}" style="background:transparent;color:var(--ink-soft);font-size:14px;line-height:1">✕</button>`}</span>`).join('')}</div>
+    <div class="row-actions">
+      <button class="btn orange" id="bCompare">실제 추계와 비교하기</button>
+      ${refreshBtn}
+    </div>
+    ${members.length<2?'<p class="footer" style="text-align:left;margin-top:8px">두 명 이상 모이면 누가 더 정확한지 겨룰 수 있어요.</p>':''}`;
+  if(!apiUrl) $$('[data-del]',list).forEach(b=>b.onclick=()=>{ members.splice(+b.dataset.del,1); paintMembers(); $('#pyrResult').innerHTML=''; });
+  const rb=$('#bReload',list); if(rb) rb.onclick=loadMembers;
+  $('#bCompare',list).onclick=showCompare;
+}
+
+async function showCompare(){
+  if(apiUrl){ await loadMembers(); }
+  if(!members.length){ return; }
+  const box=$('#pyrResult');
+  const ranked=members.map(m=>({...m, e:mae(m.pred)})).sort((a,b)=>a.e-b.e);
+  const best=ranked[0].e;
+  box.innerHTML=`
+    <div class="card">
+      <p class="qhead">실제 추계</p>
+      <div class="data" style="font-size:13px">${ACTUAL_NAME}</div>
+      ${pyrBars(ACTUAL, true)}
+    </div>
+    <div class="card">
+      <p class="qhead">누가 가장 비슷했을까?</p>
+      <p class="prompt" style="font-size:13.5px">평균 오차(각 칸 차이의 평균)가 <b>작을수록</b> 실제에 가깝습니다.</p>
+      ${ranked.map((m,i)=>`
+        <div class="rank ${m.e===best?'win':''}">
+          <span class="mae">평균 오차 ${m.e.toFixed(1)}%p</span>
+          <span class="name">${i+1}위 · ${esc(m.name)} ${m.e===best?'🏆':''}</span>
+          ${pyrBars(m.pred)}
+          ${m.reason?`<div style="font-size:13px;color:var(--ink-soft);margin-top:4px">“${esc(m.reason)}”</div>`:''}
+        </div>`).join('')}
+      <div class="row-actions">
+        <button class="btn ghost" id="bResetPyr">${apiUrl?'모둠 예측 전체 지우기':'모둠원 지우고 다시 하기'}</button>
+      </div>
+    </div>`;
+  $('#bResetPyr').onclick=async()=>{
+    if(apiUrl){
+      if(!confirm('우리 모둠이 올린 예측을 모두 지울까요? 되돌릴 수 없어요.')) return;
+      try{ await api('reset',{code:groupCode}); }catch(e){ alert('지우지 못했어요 — '+e.message); return; }
+    }
+    members=[]; renderPyramid(); scrollTo(0,0);
+  };
+  if(box.scrollIntoView) box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ════════ 감독 체험 ════════ */
+let demoOn=false, demoLeft=false;
+function renderProctor(){
+  const wrap=$('#tabProctor');
+  wrap.innerHTML=`
+    <div class="card">
+      <p class="qhead">감독 기능, 미리 겪어보기</p>
+      <p class="prompt" style="font-size:14px">실제 <b>논술 작성 중</b>에는 화면을 벗어나 다른 앱을 켜면 <b>자동으로 제출</b>되고 잠깁니다.
+      연습에서는 <u>실제 제출은 하지 않고</u> 경고만 띄워 보여 줄게요.</p>
+      <div class="data" style="font-size:13.5px">
+        <b>체험 방법</b><br>
+        ① 아래 <b>‘감독 켜기’</b>를 누른다 →<br>
+        ② 태블릿 <b>홈 버튼을 눌러 다른 화면으로</b> 나갔다가 →<br>
+        ③ 다시 이 앱으로 <b>돌아온다</b>.
+      </div>
+      <div class="row-actions">
+        <button class="btn red" id="bDemoOn">감독 켜기</button>
+        <button class="btn ghost" id="bDemoPeek">경고 화면만 미리 보기</button>
+      </div>
+      <p class="footer" id="demoState" style="text-align:left;margin-top:8px">감독이 꺼져 있어요.</p>
+      <div class="warnbox" id="demoWarn">
+        <div class="big">⚠ 화면을 벗어났어요!</div>
+        <div>실제 평가였다면 지금 <b>자동으로 제출</b>되고 더 이상 고칠 수 없었을 거예요.<br>시험 중에는 다른 앱을 켜지 않도록 조심해요.</div>
+        <div class="row-actions" style="justify-content:center;margin-top:12px">
+          <button class="btn" id="bDemoOk" style="background:#fff;color:var(--red)">알겠어요</button>
+        </div>
+      </div>
+    </div>`;
+  $('#bDemoOn',wrap).onclick=()=>{ demoOn?demoStop():demoStart(); };
+  $('#bDemoPeek',wrap).onclick=()=>{ $('#demoWarn').classList.add('show'); };
+  $('#bDemoOk',wrap).onclick=()=>{ $('#demoWarn').classList.remove('show'); };
+}
+function demoStart(){ demoOn=true; demoLeft=false;
+  $('#bDemoOn').textContent='감독 끄기'; $('#demoState').textContent='감독이 켜졌어요. 이제 홈 버튼으로 나갔다 돌아와 보세요.'; }
+function demoStop(){ if(!demoOn)return; demoOn=false; demoLeft=false;
+  const b=$('#bDemoOn'); if(b)b.textContent='감독 켜기'; const s=$('#demoState'); if(s)s.textContent='감독이 꺼져 있어요.'; }
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ if(demoOn) demoLeft=true; }
+  else if(demoOn && demoLeft){ demoLeft=false; $('#demoWarn').classList.add('show'); }
+});
+
+/* ════════ 개념 연습 (① 지표 · ② 피라미드 · ③ 변천 · ④ OX) ════════ */
+const calcQs=[
+  { title:'총부양비 구하기', prompt:'어느 지역의 연령별 인구가 아래와 같습니다. <b>총부양비</b>를 구하세요.',
+    rows:[['유소년층 (0~14세)','200명'],['청장년층 (15~64세)','500명'],['노년층 (65세 이상)','100명']],
+    answer:60, formula:'총부양비 = ((유소년층 + 노년층) ÷ 청장년층) × 100',
+    explain:'부양을 <b>받는</b> 인구(200+100=300)를 부양하는 인구(500)로 나눕니다. (300÷500)×100 = <b>60</b>.' },
+  { title:'노령화 지수 구하기', prompt:'같은 방식으로 <b>노령화 지수</b>를 구하세요.',
+    rows:[['유소년층 (0~14세)','150명'],['청장년층 (15~64세)','550명'],['노년층 (65세 이상)','300명']],
+    answer:200, formula:'노령화 지수 = (노년층 ÷ 유소년층) × 100',
+    explain:'노령화 지수는 청장년층과 무관해요. (300÷150)×100 = <b>200</b>. 100을 넘으면 노년층이 유소년층보다 많다는 뜻이라, 200이면 두 배예요.' },
+  { title:'노년 부양비 구하기', prompt:'이번엔 <b>노년 부양비</b>만 구해 보세요.',
+    rows:[['유소년층 (0~14세)','240명'],['청장년층 (15~64세)','480명'],['노년층 (65세 이상)','120명']],
+    answer:25, formula:'노년 부양비 = (노년층 ÷ 청장년층) × 100',
+    explain:'유소년은 쓰지 않아요. (120÷480)×100 = <b>25</b>.' },
+];
+function renderCalc(){
+  const wrap=$('#t1');
+  calcQs.forEach((q,i)=>{
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="qnum">지표 계산 · ${i+1} / ${calcQs.length}</div>
+      <p class="qhead">${q.title}</p><div class="prompt">${q.prompt}</div>
+      <div class="data"><table><tbody>${q.rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</tbody></table></div>
+      <button class="hintbtn">공식 보기</button><div class="formula">${q.formula}</div>
+      <div class="row-actions"><input class="num" inputmode="decimal" placeholder="답 입력">
+        <button class="check">확인</button><button class="retry" hidden>다시 풀기</button></div>
+      <div class="feedback"></div>`;
+    const inp=$('.num',c),fb=$('.feedback',c),chk=$('.check',c),rt=$('.retry',c),hint=$('.hintbtn',c),fm=$('.formula',c);
+    hint.onclick=()=>{ fm.classList.toggle('show'); hint.textContent=fm.classList.contains('show')?'공식 숨기기':'공식 보기'; };
+    chk.onclick=()=>{
+      const v=parseFloat((inp.value||'').replace(/[^0-9.\-]/g,''));
+      if(isNaN(v)){ fb.className='feedback show bad'; fb.innerHTML='숫자를 입력한 뒤 확인을 눌러요.'; return; }
+      const ok=Math.abs(v-q.answer)<=0.5;
+      c.classList.toggle('ok',ok); c.classList.toggle('no',!ok);
+      fb.className='feedback show '+(ok?'good':'bad');
+      fb.innerHTML=(ok?'<b>맞아요! 🎉</b> ':`<b>다시 볼까요.</b> 정답은 <b>${q.answer}</b>이에요. `)+q.explain;
+      inp.disabled=true; chk.hidden=true; rt.hidden=false; fm.classList.add('show'); hint.hidden=true;
+    };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') chk.click(); });
+    rt.onclick=()=>{ inp.disabled=false; inp.value=''; chk.hidden=false; rt.hidden=true; hint.hidden=false;
+      fb.className='feedback'; c.classList.remove('ok','no'); inp.focus(); };
+    wrap.appendChild(c);
+  });
+}
+const pyrQs=[
+  { title:'이 인구 구조의 유형은?', prompt:'아래 인구 피라미드를 보고 알맞은 설명을 고르세요.',
+    bands:[['0~14세',38],['15~64세',57],['65세+',5]], cap:'밑변이 넓고 위로 갈수록 좁아지는 모양',
+    options:['피라미드형 — 출생률이 높아 유소년층이 두껍다 (개발도상국형)','종형 — 출생·사망률이 모두 낮아 안정적이다','방추형 — 노년층이 두껍고 인구가 줄어든다','별형 — 청장년층이 몰려드는 대도시형이다'],
+    correct:0, explain:'밑변(유소년)이 두껍고 위가 얇으면 <b>피라미드형(확대형)</b>. 출생률이 높은 개발도상국에서 나타나요.' },
+  { title:'가장 인구가 많은 연령대는?', prompt:'이 나라에서 지금 가장 인구가 많은 연령대를 고르세요.',
+    bands:[['0~9세',8],['10~19세',9],['20~29세',11],['30~39세',13],['40~49세',17],['50~59세',14],['60~69세',12],['70~79세',9],['80세+',7]],
+    cap:'특정 연령대가 불룩하게 튀어나온 모양', options:['0~9세','20~29세','40~49세','70~79세'],
+    correct:2, explain:'막대가 가장 긴 <b>40~49세</b>가 가장 두꺼워요. 이들은 25년 뒤엔 <b>65~74세</b>가 되어 노년층을 크게 부풀립니다. 예측의 핵심이에요.' },
+];
+function pyrMini(bands){ const max=Math.max(...bands.map(b=>b[1]));
+  return `<div class="pyr">${bands.map(b=>`<div class="band"><span class="lab">${b[0]}</span>
+    <span class="track"><span class="bar" style="width:${Math.round(b[1]/max*100)}%"></span></span>
+    <span class="val">${b[1]}%</span></div>`).join('')}</div>`; }
+function renderPyrQ(){
+  const wrap=$('#t2');
+  pyrQs.forEach((q,i)=>{
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="qnum">피라미드 읽기 · ${i+1} / ${pyrQs.length}</div>
+      <p class="qhead">${q.title}</p><div class="prompt">${q.prompt}</div>${pyrMini(q.bands)}
+      <div style="font-size:12px;color:var(--ink-soft);text-align:center;margin:-4px 0 8px">${q.cap}</div>
+      <div class="opts">${q.options.map((o,j)=>`<button class="opt" data-j="${j}">${esc(o)}</button>`).join('')}</div>
+      <div class="feedback"></div>`;
+    wireChoice(c,q); wrap.appendChild(c);
+  });
+}
+const stageQs=[
+  { birth:43.5, death:8.3, sf:6.9, correct:2, explain:'사망률은 크게 떨어졌는데(8.3) 출생률이 여전히 매우 높아(43.5) 인구가 빠르게 늘어요. → <b>2단계(초기 팽창)</b>. 니제르가 이런 경우.' },
+  { birth:8.1, death:12.1, sf:1.5, correct:5, explain:'출생률(8.1)이 사망률(12.1)보다 <b>낮아</b> 자연 감소해요. → <b>5단계</b>. 4단계와 모양이 비슷하니 <b>출생·사망률 중 어느 쪽이 큰지</b>로 갈라야 해요. 독일이 이런 경우.' },
+  { birth:22.9, death:7.1, sf:3.6, correct:3, explain:'사망률은 이미 낮고(7.1) 출생률이 낮아지기 시작(22.9)했어요. → <b>3단계(후기 팽창)</b>. 가나가 여기에 해당.' },
+];
+function renderStage(){
+  const wrap=$('#t3');
+  const intro=document.createElement('div'); intro.className='card';
+  intro.innerHTML=`<p class="qhead">먼저 기억할 것</p>
+    <div class="prompt" style="font-size:14px">인구 변천 모형은 <b>피라미드 모양</b>이 아니라 <b>출생률과 사망률의 관계</b>로 정해요. 특히 4·5단계는 모양이 비슷하니,
+    <b>출생률 &gt; 사망률(자연 증가)인지, 출생률 &lt; 사망률(자연 감소)인지</b>를 보세요.</div>
+    <div class="data" style="font-size:13px">1단계 고위 정체 · 2단계 초기 팽창 · 3단계 후기 팽창 · 4단계 저위 정체 · 5단계 감소</div>`;
+  wrap.appendChild(intro);
+  stageQs.forEach((q,i)=>{
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="qnum">변천 모형 · ${i+1} / ${stageQs.length}</div>
+      <p class="qhead">몇 단계일까요?</p>
+      <div class="data"><table><thead><tr><th>조출생률</th><th>조사망률</th><th>합계 출산율</th></tr></thead>
+        <tbody><tr><td><b>${q.birth}‰</b></td><td><b>${q.death}‰</b></td><td>${q.sf}</td></tr></tbody></table>
+        <div style="font-size:12px;color:var(--ink-soft);text-align:center;margin-top:4px">‰ = 인구 1,000명당 명</div></div>
+      <div class="stagebtns opts row">${[1,2,3,4,5].map(n=>`<button class="opt" data-j="${n}">${n}단계</button>`).join('')}</div>
+      <div class="feedback"></div>`;
+    wireChoice(c,{correct:q.correct, explain:q.explain}); wrap.appendChild(c);
+  });
+}
+const oxQs=[
+  { stmt:'선진국은 주로 저출생·고령화 문제를, 개발도상국은 인구 급증 문제를 겪는다.', answer:true,
+    explain:'맞아요. 발전 단계에 따라 인구 문제의 성격이 달라져요.' },
+  { stmt:'노령화 지수가 100을 넘으면 노년층 인구가 유소년층 인구보다 많다는 뜻이다.', answer:true,
+    explain:'맞아요. 노령화 지수 = (노년층 ÷ 유소년층) × 100이니까요.' },
+  { stmt:'인구 변천 모형의 4단계와 5단계는 인구 피라미드 모양만 보고 쉽게 구분할 수 있다.', answer:false,
+    explain:'아니에요. 모양이 비슷해서, 출생률과 사망률을 견주어 <b>자연 증가인지 감소인지</b>로 갈라야 해요.' },
+  { stmt:'‘세대 간 정의’는 지금 세대의 문제 해결이 미래 세대에 지나친 부담을 주지 않아야 한다는 관점이다.', answer:true,
+    explain:'맞아요. 오늘의 선택이 다음 세대의 부담이 될 수 있어 세대 간 형평을 함께 따져야 해요.' },
+];
+function renderOx(){
+  const wrap=$('#t4');
+  oxQs.forEach((q,i)=>{
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="qnum">개념 OX · ${i+1} / ${oxQs.length}</div>
+      <p class="prompt" style="font-size:15px;margin-top:4px">${q.stmt}</p>
+      <div class="ox opts row"><button class="opt" data-j="O">O</button><button class="opt" data-j="X">X</button></div>
+      <div class="feedback"></div>`;
+    const opts=$$('.opt',c), fb=$('.feedback',c);
+    opts.forEach(b=>b.onclick=()=>{
+      const ok=(b.dataset.j==='O')===q.answer;
+      opts.forEach(x=>{ x.disabled=true; if((x.dataset.j==='O')===q.answer) x.classList.add('reveal-ok'); });
+      b.classList.add(ok?'pick-ok':'pick-no'); c.classList.add(ok?'ok':'no');
+      fb.className='feedback show '+(ok?'good':'bad');
+      fb.innerHTML=(ok?'<b>맞아요! 🎉</b> ':`<b>정답은 ${q.answer?'O':'X'}.</b> `)+q.explain+' <button class="retry">다시 풀기</button>';
+      $('.retry',fb).onclick=()=>{ opts.forEach(x=>{x.disabled=false;x.className='opt';}); fb.className='feedback'; c.classList.remove('ok','no'); };
+    });
+    wrap.appendChild(c);
+  });
+}
+function wireChoice(c,q){
+  const opts=$$('.opt',c), fb=$('.feedback',c);
+  opts.forEach(b=>b.onclick=()=>{
+    const ok=Number(b.dataset.j)===q.correct;
+    opts.forEach(x=>{ x.disabled=true; if(Number(x.dataset.j)===q.correct) x.classList.add('reveal-ok'); });
+    b.classList.add(ok?'pick-ok':'pick-no'); c.classList.add(ok?'ok':'no');
+    fb.className='feedback show '+(ok?'good':'bad');
+    fb.innerHTML=(ok?'<b>맞아요! 🎉</b> ':'<b>다시 볼까요.</b> ')+q.explain+' <button class="retry">다시 풀기</button>';
+    $('.retry',fb).onclick=()=>{ opts.forEach(x=>{x.disabled=false;x.className='opt';}); fb.className='feedback'; c.classList.remove('ok','no'); };
+  });
+}
+
+/* ── 초기 렌더 ── */
+renderPyramid(); renderProctor();
+renderCalc(); renderPyrQ(); renderStage(); renderOx();
+
+/* 연결 상태 표시 */
+(function(){
+  const el=$('#connState'); if(!el) return;
+  if(apiUrl){ el.innerHTML='🔗 서버에 연결됨 — 모둠원이 각자 기기에서 넣은 예측이 함께 모입니다.';
+    api('ping',{}).catch(()=>{ el.innerHTML='⚠ 서버 주소가 있지만 응답이 없어요. 배포 상태를 확인하세요.'; }); }
+  else{ el.innerHTML='이 기기 안에서만 작동합니다(서버 미연결). 모둠원이 한 태블릿에서 번갈아 입력하세요.'; }
+})();
+</script>
+</body>
+</html>

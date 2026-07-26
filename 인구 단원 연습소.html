@@ -123,6 +123,9 @@ button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:trans
 .warnbox.show{display:block}
 .warnbox .big{font-family:'Jua',sans-serif;font-size:20px;margin-bottom:6px}
 .footer{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:18px}
+.gate-err{display:none;margin:8px 2px 0;font-size:13px;color:var(--no);background:var(--no-bg);
+  border-radius:12px;padding:9px 13px;box-shadow:var(--shadow-sm)}
+.gate-err.show{display:block}
 @media (max-width:480px){ .tabs button{min-width:0;font-size:12.5px;padding:10px 4px} }
 </style>
 </head>
@@ -138,10 +141,13 @@ button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:trans
       <span class="badge">연습용 · 점수는 저장되지 않아요</span>
     </div>
     <div class="card">
-      <p class="qhead">모둠 코드로 입장</p>
-      <p class="prompt" style="font-size:14px">실제 평가처럼 <b>코드를 입력</b>하고 들어갑니다. 우리 반은 모둠마다 코드가 하나씩이라, <b>같은 모둠원은 모두 같은 코드</b>로 들어와요.</p>
-      <label for="gCode">모둠 코드</label>
-      <input id="gCode" class="txt" placeholder="예) ABCD123" autocapitalize="off">
+      <p class="qhead">코드로 입장</p>
+      <p class="prompt" style="font-size:14px">실제 평가처럼 <b>수업 코드</b>와 <b>모둠 코드</b>를 넣고 들어갑니다. 모둠 코드는 <b>반·모둠 네 자리</b>예요 — 예를 들어 <b>3반 5모둠</b>이면 <b>0305</b>. 같은 모둠원은 모두 같은 코드로 들어와요.</p>
+      <label for="gClass">수업 코드</label>
+      <input id="gClass" class="txt" placeholder="예) SOC5P" autocapitalize="characters">
+      <label for="gCode" style="margin-top:12px">모둠 코드 (반반모둠모둠)</label>
+      <input id="gCode" class="txt" placeholder="예) 0305" inputmode="numeric" maxlength="4">
+      <p class="gate-err" id="gateErr"></p>
       <div class="stack" style="margin-top:14px"><button class="btn" id="bEnter">입장하기</button></div>
       <p class="footer" id="connState" style="text-align:left;margin-top:12px"></p>
     </div>
@@ -183,7 +189,31 @@ button.retry{font-size:13px;padding:8px 14px;border-radius:12px;background:trans
    │  아래 따옴표 안에 배포한 /exec 주소를 넣으세요.  │
    │  비워 두면 서버 없이 이 기기 안에서만 작동합니다. │
    └──────────────────────────────────────────────┘ */
-const API_URL = "https://script.google.com/macros/s/AKfycbwl7jtRQ_wCRPiIMe_-a450I_PUCqo4j5_tNsvoI7RyVMbr0pE0nyv8qj7iEoRj6mjU-Q/exec";
+const API_URL = "";
+
+/* ┌──────────────────────────────────────────────┐
+   │  입장 코드 설정 — 실제 평가와 같은 방식         │
+   │                                                │
+   │  ① 수업 코드 : 반 전체가 공통으로 쓰는 코드.     │
+   │     실제 평가와 헷갈리지 않게 연습용을 따로 둡니다.│
+   │                                                │
+   │  ② 모둠 코드 : 4자리 숫자 "반반모둠모둠".         │
+   │     예) 0305 = 03반 05모둠  (실제 학번 10101과   │
+   │     같은 결로, 앞 두 자리가 반, 뒤 두 자리가 모둠) │
+   │                                                │
+   │  CLASSES / GROUPS_PER_CLASS 로 열리는 반·모둠을  │
+   │  정합니다. (1~10반, 반마다 최대 7모둠)          │
+   └──────────────────────────────────────────────┘ */
+const CLASS_CODE = "SOC5P";           // 연습용 수업 코드
+const CLASSES = [1,2,3,4,5,6,7,8,9,10];
+const GROUPS_PER_CLASS = {1:7, 2:7, 3:7, 4:7, 5:7, 6:7, 7:7, 8:7, 9:7, 10:7};
+
+// 4자리 코드 "0305" 목록을 자동 생성 (건드릴 필요 없음)
+const pad2=n=>String(n).padStart(2,'0');
+const GROUP_CODES = CLASSES.flatMap(cls=>{
+  const n = GROUPS_PER_CLASS[cls] || 0;
+  return Array.from({length:n}, (_,i)=> pad2(cls) + pad2(i+1));
+});
 
 const $=(s,el=document)=>el.querySelector(s);
 const $$=(s,el=document)=>[...el.querySelectorAll(s)];
@@ -199,15 +229,36 @@ async function api(action,q){
   return data;
 }
 
-let groupCode='';
+let groupCode='', myClass=null, myGroup=null;
+// 4자리 "0305" → {cls:3, grp:5, code:'0305'}.  "3-5","3반5모둠" 같은 입력도 허용해서 4자리로 정규화.
+function parseCode(s){
+  const raw=String(s||'').trim();
+  let cls, grp;
+  if(/^\d{3,4}$/.test(raw)){ const t=raw.padStart(4,'0'); cls=+t.slice(0,2); grp=+t.slice(2); }
+  else { const n=raw.match(/\d+/g); if(!n||n.length<2) return null; cls=+n[0]; grp=+n[1]; }
+  if(!cls||!grp) return null;
+  return { cls, grp, code: pad2(cls)+pad2(grp) };
+}
 /* ── 게이트 → 메인 ── */
 $('#bEnter').onclick=()=>{
-  const code=($('#gCode').value||'').trim();
-  if(!code){ $('#gCode').focus(); return; }
-  groupCode=code;
-  $('#whoLabel').textContent='🧩 '+code;
+  const clsRaw=($('#gClass').value||'').trim();
+  const raw=($('#gCode').value||'').trim();
+  const err=$('#gateErr');
+  if(clsRaw.toUpperCase()!==CLASS_CODE.toUpperCase()){
+    err.textContent='수업 코드가 맞지 않아요. 선생님이 알려 준 수업 코드를 확인하세요.';
+    err.classList.add('show'); $('#gClass').focus(); $('#gClass').select(); return;
+  }
+  if(!raw){ $('#gCode').focus(); return; }
+  const p=parseCode(raw);
+  if(!p || !GROUP_CODES.includes(p.code)){
+    err.textContent='입장할 수 없는 모둠 코드예요. 반·모둠 네 자리를 확인하세요. (예: 3반 5모둠 → 0305)';
+    err.classList.add('show'); $('#gCode').focus(); $('#gCode').select(); return;
+  }
+  err.classList.remove('show');
+  groupCode=p.code; myClass=p.cls; myGroup=p.grp;
+  $('#whoLabel').textContent='🧩 '+p.cls+'반 '+p.grp+'모둠';
   $('#pGate').classList.add('hide'); $('#pMain').classList.remove('hide');
-  renderPyramid();  // 입장 후 (서버가 있으면 기존 제출을 불러오도록) 다시 그림
+  renderPyramid();
   scrollTo(0,0);
 };
 $('#gCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#bEnter').click(); });
@@ -296,7 +347,7 @@ function renderPyramid(){
     const btn=$('#bAddMember',form);
     if(apiUrl){
       btn.disabled=true; btn.textContent='저장 중…';
-      try{ await api('submit',{code:groupCode, name, pred:myPred, reason}); }
+      try{ await api('submit',{code:groupCode, cls:myClass, grp:myGroup, name, pred:myPred, reason}); }
       catch(e){ alert('저장하지 못했어요 — '+e.message); btn.disabled=false; btn.textContent='이 예측 제출'; return; }
       btn.textContent='이 예측 제출';
       await loadMembers();          // 서버에서 최신 목록 반영
@@ -578,6 +629,7 @@ renderCalc(); renderPyrQ(); renderStage(); renderOx();
 
 /* 연결 상태 표시 */
 (function(){
+  const gc=$('#gClass'); if(gc && !gc.value) gc.value=CLASS_CODE;   // 수업 코드 미리 채움
   const el=$('#connState'); if(!el) return;
   if(apiUrl){ el.innerHTML='🔗 서버에 연결됨 — 모둠원이 각자 기기에서 넣은 예측이 함께 모입니다.';
     api('ping',{}).catch(()=>{ el.innerHTML='⚠ 서버 주소가 있지만 응답이 없어요. 배포 상태를 확인하세요.'; }); }

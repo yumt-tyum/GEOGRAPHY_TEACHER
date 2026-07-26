@@ -1,754 +1,1327 @@
-/**
- * 통합사회2 Ⅴ단원 「세계의 인구와 인구 문제」 서논술형 수행평가 백엔드
- * ──────────────────────────────────────────────────────────────
- * 학생 식별은 다섯 자리 학번 하나로 합니다. (예: 10101 = 1학년 1반 1번)
- *
- * 설치
- *  1. 스프레드시트 → 확장 프로그램 → Apps Script 에 이 코드를 붙여넣고 저장
- *  2. 스프레드시트를 새로고침하면 상단에 「수행평가」 메뉴가 생긴다
- *  3. 「수행평가 → 1. 시트 만들기」 실행 (권한 허용)
- *  4. 명렬표에 학번과 이름을 붙여넣고 「2. 응시 코드 발급」 실행
- *  5. 배포 → 새 배포 → 웹 앱 / 실행 계정 "나" / 액세스 권한 "모든 사용자"
- *  6. 발급된 URL(/exec)을 HTML 맨 위 API_URL 에 붙여넣는다
- *
- * AI 채점 초안을 쓰려면
- *  「수행평가 → AI 채점 → API 키 등록」에서 Anthropic API 키를 한 번만 넣는다.
- *  키는 이 스크립트 속성에만 저장되며 학생 화면에는 절대 나타나지 않는다.
- *
- * 코드를 고치면 반드시 「배포 → 배포 관리 → 연필 → 버전: 새 버전 → 배포」 해야 반영된다.
- */
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="인구 수행평가">
+<meta name="theme-color" content="#FBF6EA">
+<title>세계의 인구와 인구 문제 · 서논술형 수행평가</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap');
+:root{
+  --bg:#FBF6EA;--clay:#FFFDF7;--clay-2:#FBF3E4;--ink:#4A3B2E;--ink-soft:#9A8264;--line:#EADFC8;
+  --young:#F4A0A6;--work:#8DCB8E;--old:#6FB0D6;
+  --pred:#EC7C86;--actual:#3A9E86;--teach:#E28B3C;
+  --cream:#FFFDF7;--stitch:#E6D8BC;
+  --red:#E0655E;--orange:#EFA043;--yellow:#F2C94C;--green:#7FC08A;--blue:#6FB0D6;
+  --shadow-out:5px 6px 15px rgba(150,110,60,.15),-4px -4px 11px rgba(255,255,255,.85);
+  --shadow-in:inset 4px 4px 9px rgba(150,110,60,.14),inset -4px -4px 9px rgba(255,255,255,.9);
+  --shadow-sm:3px 3px 8px rgba(150,110,60,.13),-2px -2px 7px rgba(255,255,255,.8);
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{
+  color:var(--ink);font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  font-size:15px;line-height:1.75;-webkit-text-size-adjust:100%;
+  background-color:#FBF6EA;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(224,101,94,.05) 0 2px, transparent 2px 46px),
+    repeating-linear-gradient(0deg,  rgba(127,192,138,.06) 0 2px, transparent 2px 46px),
+    repeating-linear-gradient(90deg, rgba(111,176,214,.045) 0 22px, transparent 22px 46px),
+    repeating-linear-gradient(0deg,  rgba(242,201,76,.05) 0 22px, transparent 22px 46px);
+  background-attachment:fixed;
+}
+h1,h2,h3,.jua,button,.tag,.pill,.n{font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-weight:400}
+.wrap{max-width:880px;margin:0 auto;padding:18px 16px 70px}
+.card{background:var(--clay);border-radius:22px;box-shadow:var(--shadow-out);padding:22px;margin-bottom:18px;
+  border:2px solid #fff;outline:2px dashed var(--stitch);outline-offset:-7px}
+.card.tight{padding:15px}
+.sunken{background:var(--clay-2);border-radius:18px;box-shadow:var(--shadow-in);padding:15px}
 
-const S_CFG='설정', S_ROSTER='명렬표', S_SUB='제출', S_DATA='기준데이터', S_ESSAY='논술답안';
+button{font-size:15px;padding:11px 20px;border:none;border-radius:16px;cursor:pointer;
+  background:var(--clay);color:var(--ink);box-shadow:var(--shadow-sm);transition:transform .12s;
+  white-space:nowrap;word-break:keep-all;line-break:strict}
+.stack>button{flex:0 0 auto}
+button:hover{transform:translateY(-1px)} button:active{box-shadow:var(--shadow-in);transform:translateY(1px)}
+button:focus-visible{outline:3px solid var(--teach);outline-offset:2px}
+button.primary{background:linear-gradient(145deg,#EC8A83,#DD5E56);color:#fff}
+button.go{background:linear-gradient(145deg,#8FCF95,#5DA96A);color:#fff}
+button.warn{background:linear-gradient(145deg,#F4CB63,#EBA53C);color:#5A4118}
+button.blue{background:linear-gradient(145deg,#84BEDF,#579BC6);color:#fff}
+button.ghost{background:transparent;box-shadow:none;color:var(--ink-soft);text-decoration:underline;padding:8px 10px}
+button[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+
+input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink);background:var(--clay-2);border:none;border-radius:14px;box-shadow:var(--shadow-in);padding:11px 14px;width:100%}
+input:focus,select:focus,textarea:focus{outline:3px solid var(--teach);outline-offset:1px}
+textarea{resize:vertical;min-height:110px;line-height:1.85}
+textarea.long{min-height:300px}
+label{display:block;font-size:13px;color:var(--ink-soft);margin:0 0 6px 4px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:560px){.row3{grid-template-columns:1fr 1fr}}
+.stack{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.muted{color:var(--ink-soft);font-size:13px} .tiny{font-size:12px;color:var(--ink-soft);line-height:1.65}
+hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+.steps{display:flex;gap:5px;margin-bottom:16px}
+.steps div{flex:1;height:9px;border-radius:99px;background:var(--clay-2);box-shadow:var(--shadow-in)}
+.steps div.on{background:linear-gradient(145deg,#EC8A83,#DD5E56)} .steps div.done{background:#B5DFB9}
+.prow{display:flex;align-items:center;gap:8px;margin:2px 0}
+.plab{width:60px;flex:0 0 60px;font-size:12px;color:var(--ink-soft);text-align:right}
+.pbar{position:relative;flex:1 1 auto;min-width:0;border-radius:8px;background:var(--clay-2);box-shadow:var(--shadow-in);touch-action:none}
+.pyr.editable .pbar{cursor:ew-resize}
+.pyr.editable .pbar:focus-visible{outline:3px solid var(--teach);outline-offset:2px}
+.pbar .axis{position:absolute;left:50%;top:2px;bottom:2px;width:1px;background:var(--line)}
+.fill{position:absolute;top:3px;bottom:3px}
+.fill.l{right:50%;border-radius:7px 2px 2px 7px} .fill.r{left:50%;border-radius:2px 7px 7px 2px}
+.g0 .fill{background:linear-gradient(145deg,#F6B3B7,#EC8A90)}
+.g1 .fill{background:linear-gradient(145deg,#AEDAB0,#84C08C)}
+.g2 .fill{background:linear-gradient(145deg,#9FCDE6,#72B0D6)}
+.pyr.mono .fill{background:linear-gradient(145deg,#EC8A83,#DD5E56)}
+.ghostbar{position:absolute;top:1px;bottom:1px;border:2px solid var(--actual);background:rgba(47,175,168,.09)}
+.ghostbar.l{right:50%;border-radius:8px 2px 2px 8px;border-right:none}
+.ghostbar.r{left:50%;border-radius:2px 8px 8px 2px;border-left:none}
+.pval{width:50px;flex:0 0 50px;font-size:12px}
+.pdel{width:46px;flex:0 0 46px;font-size:11px;text-align:right}
+.up{color:#DF6C87}.down{color:#209B95}
+.sumbar{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:9px 14px;border-radius:14px;background:var(--clay-2);box-shadow:var(--shadow-in);font-size:14px}
+.sumbar b{font-family:'Jua',sans-serif;font-size:18px}
+.sumbar.bad b{color:#DF6C87} .sumbar.good b{color:#209B95}
+.legend{font-size:11.5px;color:var(--ink-soft);margin-top:8px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin:0 4px 0 12px;vertical-align:-1px}
+.tag{display:inline-block;padding:4px 11px;border-radius:999px;font-size:12px;background:var(--clay-2);box-shadow:var(--shadow-sm);margin:2px 4px 2px 0;white-space:nowrap}
+.tag.t1{background:#F7D5D3}.tag.t2{background:#FBE6BF}.tag.t3{background:#D3E7F2}.tag.ok{background:#CDE9CF}
+.pill{display:inline-flex;gap:6px;padding:8px 14px;border-radius:999px;background:var(--clay);box-shadow:var(--shadow-sm);font-size:13px}
+.metric{text-align:center;padding:13px 8px;border-radius:16px;background:var(--clay-2);box-shadow:var(--shadow-in)}
+.metric .n{font-size:22px;line-height:1.2} .metric .k{font-size:11px;color:var(--ink-soft)}
+.choice{display:flex;flex-wrap:wrap;gap:8px}
+.choice button{flex:1 1 auto;min-width:80px;font-size:14px;padding:12px 8px}
+.choice button[aria-pressed="true"]{background:linear-gradient(145deg,#8FCF95,#5DA96A);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-family:'Jua',sans-serif;color:var(--ink-soft);font-size:12px}
+.scroll{overflow-x:auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tabs button{flex:1 1 auto;min-width:78px;padding:10px 5px;font-size:14px}
+.tabs button[aria-selected="true"]{background:linear-gradient(145deg,#EFA043,#E28B3C);color:#fff}
+.hide{display:none!important}
+.note{background:#FBEFD6;border-radius:16px;padding:12px 16px;font-size:13px;box-shadow:var(--shadow-sm)}
+.note.mint{background:#DDEFE0}.note.pink{background:#F9E4E2}.note.lilac{background:#E3EEF5}
+.q{border-left:4px solid var(--teach);padding-left:12px;margin:18px 0 10px;overflow:hidden}
+.q b{font-family:'Jua',sans-serif} .q .pts{float:right;font-size:12px;color:var(--ink-soft);margin-left:10px}
+.cond{background:var(--clay-2);border-radius:14px;padding:12px 16px;font-size:13.5px;box-shadow:var(--shadow-in);margin:10px 0}
+.cond ol{margin:6px 0 0;padding-left:20px} .cond li{margin:4px 0}
+.dotrow{display:flex;align-items:center;gap:8px;margin:5px 0}
+.dotline{position:relative;flex:1 1 auto;min-width:0;height:24px;border-radius:8px;background:var(--clay-2);box-shadow:var(--shadow-in)}
+.dot{position:absolute;top:9px;width:7px;height:7px;border-radius:50%;background:var(--pred);opacity:.5;transform:translateX(-50%)}
+.mark{position:absolute;top:3px;width:3px;height:18px;border-radius:2px;background:var(--actual);transform:translateX(-50%)}
+.mean{position:absolute;top:1px;width:2px;height:22px;background:var(--teach);transform:translateX(-50%)}
+.banner{border-radius:14px;padding:9px 14px;font-size:12.5px;margin-bottom:14px}
+.banner.off{background:#FFE9E9;color:#8C3B47}.banner.on{background:#DFF4F2;color:#1D6F6A}
+
+/* ── 채점 화면: 학생 작성 칸 / 교사 입력 칸 구분 ── */
+.blk{border-radius:16px;padding:13px 15px;margin:8px 0}
+.blk .cap{font-family:'Jua','Apple SD Gothic Neo',sans-serif;font-size:12.5px;display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.blk .cap i{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+.blk .cap em{font-style:normal;margin-left:auto;font-size:11.5px;color:var(--ink-soft)}
+.blk-s{background:var(--clay-2);box-shadow:var(--shadow-in)}                       /* 학생 작성 */
+.blk-s .cap{color:#6B6488}
+.blk-t{background:#FFF6E1;box-shadow:4px 4px 10px rgba(150,118,50,.15),-3px -3px 8px rgba(255,255,255,.95);border:2px solid #F2D9A0}
+.blk-t .cap{color:#8A6520}
+.blk-t label{color:#8A6520}
+.blk-t input{background:#FFFCF4;box-shadow:inset 3px 3px 7px rgba(150,118,50,.16),inset -3px -3px 7px rgba(255,255,255,.95)}
+.blk-a{background:#E3EEF5;box-shadow:4px 4px 10px rgba(80,130,170,.13),-3px -3px 8px rgba(255,255,255,.95)}
+.blk-a .cap{color:#3F6E8E}
+.ro{white-space:pre-wrap;background:#fff;border-radius:12px;padding:11px 13px;font-size:14px;line-height:1.85}
+.livesum{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:9px 13px;
+  border-radius:12px;background:#FFFCF4;box-shadow:inset 3px 3px 7px rgba(150,118,50,.16);font-size:13.5px;color:#8A6520}
+.livesum b{font-family:'Jua',sans-serif;font-size:19px}
+.keylegend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink-soft);margin-bottom:12px}
+.keylegend span{display:inline-flex;align-items:center;gap:5px}
+.keylegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+/* ── 사칙연산 계산기 ── */
+#calcFab{position:fixed;right:18px;bottom:18px;z-index:60;padding:13px 18px;font-size:15px;
+  background:linear-gradient(145deg,#EFA043,#E28B3C);color:#fff;border-radius:18px;
+  box-shadow:5px 5px 13px rgba(90,78,130,.3),-3px -3px 9px rgba(255,255,255,.6)}
+#teacherFab{position:fixed;left:18px;bottom:18px;z-index:60;padding:10px 15px;font-size:12.5px;
+  background:var(--clay);color:var(--ink-soft);border-radius:16px;letter-spacing:.5px;opacity:.72;
+  box-shadow:var(--shadow-sm)}
+#teacherFab:hover{opacity:1}
+#calcPanel{position:fixed;right:18px;bottom:76px;z-index:61;width:264px;max-width:calc(100vw - 36px);
+  background:var(--clay);border-radius:22px;box-shadow:var(--shadow-out);padding:14px}
+#calcPanel .chist{font-size:11.5px;color:var(--ink-soft);min-height:16px;text-align:right;
+  overflow:hidden;white-space:nowrap;direction:rtl}
+#calcPanel .cdisp{background:var(--clay-2);box-shadow:var(--shadow-in);border-radius:14px;
+  padding:12px 14px;margin:6px 0 10px;text-align:right;font-family:'Jua',sans-serif;font-size:24px;
+  line-height:1.25;word-break:break-all;min-height:52px}
+.cpad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.cpad button{padding:13px 0;font-size:17px;border-radius:14px;width:100%}
+.cpad button.op{background:linear-gradient(145deg,#AFD3E8,#8FBFDD)}
+.cpad button.eq{background:linear-gradient(145deg,#8FCF95,#5DA96A);color:#fff;grid-row:span 2}
+.cpad button.clr{background:linear-gradient(145deg,#FBC6D2,#F0A2B4)}
+.cpad button.wide{grid-column:span 2}
+#calcPanel .cnote{font-size:11px;color:var(--ink-soft);text-align:center;margin-top:9px;line-height:1.5}
+@media(max-width:420px){#calcPanel{width:calc(100vw - 36px)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+#sheet{display:none}
+@media print{
+  body{background:#fff!important;background-image:none!important;font-size:11pt;line-height:1.6}
+  .wrap>section,.wrap>p,#conn,#teacherDoor,#teacherFab,#calcFab,#calcPanel{display:none!important}
+  #sheet{display:block!important;max-width:none}
+  #sheet h2{font-size:15pt;margin:0 0 4pt} #sheet h3{font-size:12pt;margin:14pt 0 4pt;border-bottom:1px solid #999;padding-bottom:2pt}
+  #sheet table{font-size:10pt;border:1px solid #999} #sheet th,#sheet td{border:1px solid #bbb;padding:4pt}
+  #sheet .ans{border:1px solid #bbb;padding:8pt;white-space:pre-wrap;min-height:40pt}
+  #sheet .sign{margin-top:18pt;border-top:1px solid #999;padding-top:8pt;font-size:10pt}
+  @page{margin:16mm}
+}
+</style>
+
+<div class="wrap">
+<div id="conn" class="banner off"></div>
+
+<!-- ============ 입장 ============ -->
+<section id="scrGate">
+  <div class="card">
+    <h2 style="margin-top:0;font-size:20px">세계의 인구와 인구 문제</h2>
+    <p class="muted" style="margin-top:-6px">통합사회2 Ⅴ단원 01 · 서논술형 수행평가</p>
+    <label for="gCode" style="margin-top:14px">수업 코드</label>
+    <input id="gCode" value="SOC5" maxlength="12" autocapitalize="characters">
+    <div class="stack" style="margin-top:16px">
+      <button class="primary" id="bStudent" style="flex:1 1 auto">학생 응시</button>
+    </div>
+  </div>
+  <div class="note lilac">
+    <b>성취기준 10통사2-05-01</b><br>
+    세계의 인구 분포와 구조 등에 대한 이해를 토대로 현재와 미래의 인구 문제 양상을 파악하고, 그 해결 방안을 제안한다.
+  </div>
+</section>
+
+<!-- ============ 학생 ============ -->
+<section id="scrStudent" class="hide">
+  <div class="steps" id="stSteps"><div></div><div></div><div></div><div></div><div></div></div>
+
+  <!-- 1 인증 -->
+  <div id="s1" class="card">
+    <h2 style="margin-top:0;font-size:19px">응시 확인</h2>
+    <p class="muted" style="margin-top:-6px">학번과 선생님께 받은 <b>응시 코드</b>를 입력하세요. 명렬표에 등록된 학생만 응시할 수 있습니다.</p>
+    <div class="row2" style="margin-top:14px">
+      <div><label for="iSid">학번 (다섯 자리)</label><input id="iSid" inputmode="numeric" placeholder="10101" maxlength="6"></div>
+      <div><label for="iPass">응시 코드</label><input id="iPass" inputmode="numeric" placeholder="0000" maxlength="8"></div>
+    </div>
+    <div class="stack" style="margin-top:18px;justify-content:flex-end"><button class="go" id="bAuth">확인</button></div>
+    <p class="tiny" id="e1" style="color:#C9556F;text-align:right;margin-top:6px"></p>
+    <hr>
+    <div class="sunken">
+      <div class="jua" style="margin-bottom:6px">평가 안내 (20점)</div>
+      <table><thead><tr><th>문항</th><th>형식</th><th>배점</th></tr></thead><tbody>
+        <tr><td>1. 인구 지표 산출</td><td>단답형</td><td>3</td></tr>
+        <tr><td>2. 인구 변천 단계 판정</td><td>단답형</td><td>1</td></tr>
+        <tr><td>3. 2050년 인구 구조 예측과 근거</td><td>서술형</td><td>6</td></tr>
+        <tr><td>4. 인구 문제 진단과 해결 방안</td><td>논술형</td><td>10</td></tr>
+      </tbody></table>
+      <p class="tiny" style="margin:10px 4px 0">예측이 실제 추계와 얼마나 가까운지는 <b>점수에 넣지 않습니다.</b> 근거와 논증의 타당성만 평가합니다.</p>
+    </div>
+  </div>
+
+  <!-- 2 판독 -->
+  <div id="s2" class="card hide">
+    <h2 style="margin-top:0;font-size:19px"><span id="rdName"></span>의 인구 구조 (2025년)</h2>
+    <p class="muted" style="margin-top:-6px" id="whoLine"></p>
+    <div class="pyr" id="pyrNow" style="margin-top:12px"></div>
+    <div class="legend"><i style="background:var(--young)"></i>유소년층 0~14세 <i style="background:var(--work)"></i>청장년층 15~64세 <i style="background:var(--old)"></i>노년층 65세 이상</div>
+    <p class="tiny" style="margin-top:8px">막대 길이는 계급 폭이 다른 0~14세·85세 이상을 공정하게 견주도록 10세 폭으로 환산한 값입니다. 옆의 숫자가 실제 비율입니다.</p>
+    <div class="sunken" style="margin-top:14px">
+      <div class="jua" style="margin-bottom:6px">계급별 인구 (단위: 만 명)</div>
+      <div class="scroll" id="rdTable"></div>
+      <div class="tiny" style="margin-top:8px">총인구 <b id="rdTot"></b> · 합계 출산율 <b id="rdTfr"></b></div>
+    </div>
+
+    <div class="q"><span class="pts">3점</span><b>문항 1.</b> 위 표를 보고 다음을 계산하시오. (소수 첫째 자리까지)</div>
+    <div class="note mint" style="margin-bottom:12px">
+      총부양비 = (유소년층 + 노년층) ÷ 청장년층 × 100 &nbsp;·&nbsp; 노령화 지수 = 노년층 ÷ 유소년층 × 100
+    </div>
+    <div class="row3">
+      <div><label for="aYoung">유소년층 비율(%)</label><input id="aYoung" inputmode="decimal"></div>
+      <div><label for="aWork">청장년층 비율(%)</label><input id="aWork" inputmode="decimal"></div>
+      <div><label for="aOld">노년층 비율(%)</label><input id="aOld" inputmode="decimal"></div>
+      <div><label for="aDep">총부양비</label><input id="aDep" inputmode="decimal"></div>
+      <div><label for="aAge">노령화 지수</label><input id="aAge" inputmode="decimal"></div>
+    </div>
+
+    <div class="q"><span class="pts">1점</span><b>문항 2.</b> 이 국가는 인구 변천 모형의 몇 단계에 해당하는가?</div>
+    <div class="row3" style="margin-bottom:12px">
+      <div class="metric"><div class="n" id="mCbr">–</div><div class="k">조출생률 (‰)</div></div>
+      <div class="metric"><div class="n" id="mCdr">–</div><div class="k">조사망률 (‰)</div></div>
+      <div class="metric"><div class="n" id="mTfr">–</div><div class="k">합계 출산율</div></div>
+    </div>
+    <p class="tiny" style="margin:-4px 4px 10px">조출생률·조사망률은 인구 1,000명당 한 해의 출생아 수와 사망자 수입니다.</p>
+    <div class="sunken" style="margin-bottom:10px">
+      <table><tbody>
+        <tr><td><b>1단계</b> 고위 정체</td><td>출생률과 사망률이 모두 높음</td></tr>
+        <tr><td><b>2단계</b> 초기 팽창</td><td>경제 성장 등으로 사망률이 급격히 낮아짐</td></tr>
+        <tr><td><b>3단계</b> 후기 팽창</td><td>인구 억제 정책 등으로 출생률이 낮아짐</td></tr>
+        <tr><td><b>4단계</b> 저위 정체</td><td>출생률과 사망률이 모두 낮음</td></tr>
+        <tr><td><b>5단계</b> 감소</td><td>인구가 자연적으로 감소함</td></tr>
+      </tbody></table>
+    </div>
+    <div class="choice" id="cStage"></div>
+    <div class="stack" style="margin-top:20px;justify-content:flex-end"><button class="go" id="b2Next">다음</button></div>
+    <p class="tiny" id="e2" style="color:#C9556F;text-align:right"></p>
+  </div>
+
+  <!-- 3 예측 -->
+  <div id="s3" class="card hide">
+    <h2 style="margin-top:0;font-size:19px">2050년 인구 구조 예측</h2>
+    <div class="q"><span class="pts">6점 · 서술형</span><b>문항 3.</b> 2050년 <span id="prName"></span>의 인구 구조를 예측하여 그리고, 그렇게 예측한 까닭을 서술하시오.</div>
+    <div class="cond"><b>조건</b>
+      <ol>
+        <li>아홉 계급에 100%를 남김없이 나누어 그릴 것 <span class="tiny">(합계는 100%를 넘을 수 없습니다)</span></li>
+        <li>2025년 피라미드에서 <u>특정 연령 계급을 지목</u>하여, 그 집단이 2050년에 어느 계급으로 옮겨 가는지 밝힐 것</li>
+        <li>합계 출산율과 기대 수명의 변화를 <u>모두</u> 근거로 삼을 것</li>
+        <li>100자 이상 서술할 것</li>
+      </ol>
+    </div>
+    <div class="stack" style="margin-bottom:8px">
+      <button id="bZero">처음부터 그리기</button><button id="bFlat">고르게 놓고 시작</button><button id="bCopy">2025년 모양에서 시작</button>
+    </div>
+    <div class="pyr editable" id="pyrPred"></div>
+    <div class="sumbar" id="sumBar"><span>아직 나눠 주지 않은 몫</span><span><b id="sumVal">100.0</b>%</span></div>
+    <p class="tiny" id="sumHint" style="margin:6px 4px 0"></p>
+    <div class="stack" style="margin-top:8px;justify-content:flex-end"><button id="bNorm">남은 몫 비례 배분</button></div>
+    <div class="row3" style="margin-top:14px">
+      <div class="metric"><div class="n" id="pmY">–</div><div class="k">유소년층</div></div>
+      <div class="metric"><div class="n" id="pmW">–</div><div class="k">청장년층</div></div>
+      <div class="metric"><div class="n" id="pmO">–</div><div class="k">노년층</div></div>
+    </div>
+    <label for="aPredR" style="margin-top:16px">예측의 근거</label>
+    <textarea id="aPredR" placeholder="예) 2025년에 45~54세인 사람들은 2050년에 70대가 되므로 …"></textarea>
+    <div class="tiny" style="text-align:right"><span id="lenPred">0</span>자 / 100자 이상</div>
+    <div class="stack" style="margin-top:18px;justify-content:space-between">
+      <button class="ghost" id="b3Back">이전 문항</button><button class="primary" id="bSubmit">1차 제출</button>
+    </div>
+    <p class="tiny" id="e3" style="color:#C9556F;text-align:right"></p>
+  </div>
+
+  <!-- 4 대기 -->
+  <div id="s4" class="card hide" style="text-align:center">
+    <h2 style="margin-top:0;font-size:19px">1차 제출 완료</h2>
+    <p class="muted">선생님이 실제 추계를 공개하면 문항 4가 열립니다.</p>
+    <div class="pyr mono" id="pyrWait" style="margin:16px 0;text-align:left"></div>
+    <div class="pill" id="waitPill">공개를 기다리는 중…</div>
+    <div class="stack" style="margin-top:14px;justify-content:center"><button class="ghost" id="bCheck">지금 확인</button></div>
+  </div>
+
+  <!-- 5 논술 -->
+  <div id="s5" class="card hide">
+    <h2 style="margin-top:0;font-size:19px">실제 추계와 견주기</h2>
+    <div id="scBox" class="sunken" style="margin-bottom:14px"></div>
+    <div class="pyr mono" id="pyrRev"></div>
+    <div class="legend"><i style="background:var(--pred)"></i>내 예측 <i style="background:var(--actual)"></i>실제 추계</div>
+    <div class="sunken" style="margin-top:14px">
+      <table><thead><tr><th>지표</th><th>2025년</th><th>내 예측</th><th>2050년 실제</th></tr></thead><tbody id="rvTable"></tbody></table>
+    </div>
+    <div id="rvTags" style="margin-top:12px"></div>
+    <p class="tiny" id="rvSrc" style="margin-top:8px"></p>
+
+    <div class="q"><span class="pts">10점 · 논술형</span><b>문항 4.</b> 2050년 <span id="soName"></span>가 맞이할 인구 문제를 진단하고 그 해결 방안을 제안하는 글을 쓰시오.</div>
+    <div class="cond"><b>조건 — 아래 네 가지를 모두 포함할 것</b>
+      <ol>
+        <li>2025년과 2050년의 인구 지표를 <u>각각 하나 이상 수치로 인용</u>할 것 <span class="tiny">(2점)</span></li>
+        <li>예상되는 인구 문제 <u>두 가지</u>를 들고, 각각을 인구 지표와 연결하여 설명할 것 <span class="tiny">(3점)</span></li>
+        <li>해결 방안을 <u>국가 차원</u>과 <u>사회·개인 차원</u>으로 나누어 제시할 것 <span class="tiny">(3점)</span></li>
+        <li>그 방안이 미래 세대에 남기는 부담을 <u>세대 간 정의</u>의 관점에서 밝힐 것 <span class="tiny">(2점)</span></li>
+      </ol>
+    </div>
+    <label for="aEssay">답안 (500자 이상)</label>
+    <textarea id="aEssay" class="long" placeholder="한 편의 완결된 글로 쓰세요. 조건 ①~④가 모두 드러나야 합니다."></textarea>
+    <div class="tiny" style="text-align:right"><span id="lenEssay">0</span>자 / 500자 이상 · 자동 저장 <span id="autoSave">–</span></div>
+    <div class="stack" style="margin-top:18px;justify-content:flex-end"><button class="go" id="bFinal">최종 제출</button></div>
+    <p class="tiny" id="e5" style="text-align:right;margin-top:6px"></p>
+  </div>
+
+  <!-- 6 완료 -->
+  <div id="s6" class="card hide" style="text-align:center">
+    <h2 id="s6title" style="margin-top:0;font-size:19px">최종 제출 완료</h2>
+    <div id="s6auto" class="note pink hide" style="text-align:left;margin-bottom:14px"></div>
+    <p class="muted">답안이 저장되었습니다. 아래 단추로 답안 사본을 인쇄하거나 PDF로 저장해 두세요.</p>
+    <div class="stack" style="justify-content:center;margin-top:14px">
+      <button class="primary" id="bPrint">답안 인쇄 · PDF 저장</button>
+    </div>
+    <div class="note lilac" style="margin-top:16px;text-align:left">
+      <b>채점 결과는 나중에 열립니다.</b><br>
+      선생님이 채점을 마치고 <b>결과를 공개</b>하면, 같은 학번과 응시 코드로 다시 들어와 점수·정답·피드백을 확인할 수 있습니다.
+    </div>
+    <p class="tiny" style="margin-top:12px">제출 이후에는 수정할 수 없습니다. 고쳐야 할 것이 있으면 선생님께 말씀드리세요.</p>
+    <div class="stack" style="justify-content:center;margin-top:10px"><button class="ghost" id="bHome6">처음 화면으로</button></div>
+  </div>
+
+  <!-- 7 결과 조회 -->
+  <div id="s7" class="card hide">
+    <h2 style="margin-top:0;font-size:20px">채점 결과 <span id="rsName" class="muted" style="font-size:15px"></span></h2>
+    <div class="sunken" style="text-align:center;margin:14px 0">
+      <div class="jua" style="font-size:14px;color:var(--ink-soft)">나의 총점</div>
+      <div class="jua" id="rsTotal" style="font-size:44px;line-height:1.2;color:var(--red)">–</div>
+      <div class="muted" style="font-size:13px">20점 만점</div>
+    </div>
+
+    <div class="sunken" style="margin-bottom:14px">
+      <div class="jua" style="margin-bottom:8px">문항별 점수</div>
+      <table><thead><tr><th>문항</th><th>배점</th><th>내 점수</th></tr></thead>
+        <tbody id="rsBreak"></tbody></table>
+    </div>
+
+    <div class="q"><b>문항 1·2</b> 내 답과 정답</div>
+    <div class="sunken" id="rsKey" style="margin-bottom:14px"></div>
+
+    <div class="q"><b>문항 3</b> 2050년 인구 구조 예측</div>
+    <div class="blk blk-s"><div class="cap"><i style="background:var(--pred)"></i>내가 쓴 근거</div>
+      <div class="ro" id="rsQ3">–</div></div>
+
+    <div class="q"><b>문항 4</b> 인구 문제 진단과 해결 방안</div>
+    <div class="blk blk-s"><div class="cap"><i style="background:var(--pred)"></i>내가 쓴 논술 <em id="rsQ4Len"></em></div>
+      <div class="ro" id="rsQ4" style="max-height:320px;overflow:auto">–</div></div>
+
+    <div id="rsMemoWrap" class="blk blk-t hide" style="margin-top:14px">
+      <div class="cap"><i style="background:var(--teach)"></i>선생님 피드백</div>
+      <div class="ro" id="rsMemo" style="background:#FFFCF4"></div>
+    </div>
+    <div id="rsAiWrap" class="blk blk-a hide" style="margin-top:10px">
+      <div class="cap"><i style="background:var(--blue,#6FB0D6)"></i>AI 피드백 <em>참고용</em></div>
+      <div class="ro" id="rsAi" style="background:#F5FAFD"></div>
+      <div class="tiny" style="margin-top:6px">AI가 자동으로 만든 참고 의견이며, 점수는 선생님이 확정합니다.</div>
+    </div>
+
+    <div class="stack" style="justify-content:center;margin-top:18px;gap:10px">
+      <button class="primary" id="bPrintResult">결과표 인쇄 · PDF 저장</button>
+      <button class="ghost" id="bHome7">처음 화면으로</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 교사 ============ -->
+<section id="scrTeacher" class="hide">
+  <div id="tLogin" class="card">
+    <h2 style="margin-top:0;font-size:19px">교사 대시보드</h2>
+    <label for="tPin">수업 PIN</label><input id="tPin" inputmode="numeric" maxlength="8" placeholder="0000">
+    <p class="tiny" style="margin:8px 4px 16px">이 수업 코드로 처음 들어가면 입력한 값이 PIN으로 등록됩니다.</p>
+    <div class="stack" style="justify-content:flex-end"><button class="ghost" id="bTBack">나가기</button><button class="primary" id="bTIn">들어가기</button></div>
+    <p class="tiny" id="tErr" style="color:#C9556F;margin-top:8px"></p>
+  </div>
+
+  <div id="tMain" class="hide">
+    <div class="card tight">
+      <div class="stack" style="justify-content:space-between">
+        <div><b class="jua" id="tCodeLbl"></b> <span class="muted" id="tCount"></span></div>
+        <div class="stack"><button id="bTHome">처음으로</button><button id="bRefresh">새로고침</button><button class="warn" id="bReveal">실제 추계 공개</button><button class="blue" id="bResult">채점 결과 공개</button></div>
+      </div>
+      <p class="tiny" id="tState" style="margin:9px 4px 0"></p>
+      <p class="tiny" id="tResultState" style="margin:4px 4px 0"></p>
+    </div>
+    <div class="tabs">
+      <button data-tab="t1" aria-selected="true">현황</button>
+      <button data-tab="t2" aria-selected="false">채점</button>
+      <button data-tab="t3" aria-selected="false">학급 분포</button>
+      <button data-tab="t4" aria-selected="false">오개념</button>
+      <button data-tab="t5" aria-selected="false">내보내기</button>
+    </div>
+
+    <div id="t1" class="card">
+      <div class="scroll"><table><thead><tr>
+        <th>학번</th><th>이름</th><th>국가</th><th>지표<br>(3)</th><th>단계<br>(1)</th><th>문항3<br>(6)</th><th>문항4<br>(10)</th><th>총점</th><th>이탈</th><th>최종</th>
+      </tr></thead><tbody id="tRows"></tbody></table></div>
+      <p class="tiny" id="tEmpty" style="margin-top:10px"></p>
+    </div>
+
+    <div id="t2" class="card hide">
+      <div class="keylegend">
+        <span><i style="background:#FFF6E1;border:2px solid #F2D9A0"></i>교사가 입력하는 칸</span>
+        <span><i style="background:var(--clay-2);border:1px solid var(--line)"></i>학생이 작성한 칸 (읽기 전용)</span>
+        <span><i style="background:#E3EEF5"></i>AI 채점 초안</span>
+      </div>
+      <label for="tPick">학생 고르기</label><select id="tPick"></select>
+      <div id="tGrade" style="margin-top:16px"></div>
+    </div>
+
+    <div id="t3" class="card hide">
+      <label for="tCountry">국가</label><select id="tCountry"></select>
+      <p class="tiny" style="margin:10px 4px">각 점이 학생 한 명의 예측입니다. 초록 막대가 실제 추계, 보라 선이 학급 평균입니다.</p>
+      <div id="tDots"></div>
+      <div class="legend"><i style="background:var(--pred);border-radius:50%"></i>학생 <i style="background:var(--actual)"></i>실제 <i style="background:var(--teach)"></i>학급 평균</div>
+      <div class="note pink" style="margin-top:14px"><b>발문</b> — “초록 막대가 우리 점 무리 <u>바깥</u>에 있는 계급이 보이나요? 거기서 우리는 다 같이 틀렸습니다.”</div>
+    </div>
+
+    <div id="t4" class="card hide"><div id="tTagBox"></div><hr><div id="tTagList"></div></div>
+
+    <div id="t5" class="card hide">
+      <p class="muted" style="margin-top:0">응답·채점·총점을 CSV로 내려받습니다. Apps Script를 연결하면 같은 내용이 스프레드시트 <b>제출</b> 시트에 실시간으로 쌓입니다.</p>
+      <div class="stack"><button class="go" id="bCsv">CSV 내려받기</button></div>
+      <hr><h3 style="font-size:16px;margin-bottom:4px">연결 상태</h3><div id="tConn" class="tiny"></div>
+      <hr><h3 style="font-size:16px">기준 데이터</h3>
+      <p class="tiny" style="margin:-4px 4px 10px">스프레드시트 <b>기준데이터</b> 시트를 고치면 앱에 바로 반영됩니다. (단위: 만 명)</p>
+      <label for="eCountry">국가</label><select id="eCountry"></select>
+      <div id="eGrid" style="margin-top:10px"></div>
+    </div>
+  </div>
+</section>
+
+<p class="tiny" style="text-align:center;margin-top:24px">
+자료 출처 — 대한민국: 통계청 「장래인구추계 2022~2072」 중위추계 · 그 밖: UN World Population Prospects 2024 중위추계<br>
+계급별 값은 공표 집계치(총인구·연령 3구분 비율·중위 연령)에 맞춰 재구성한 근사치입니다.
+</p>
+<div id="teacherDoor" style="text-align:center;margin-top:18px">
+  <button class="ghost" id="bTeacher" title="교사 전용" style="font-size:11.5px;opacity:.5;letter-spacing:.5px">· 교사용 ·</button>
+</div>
+</div>
+
+<div id="sheet"></div>
+
+<button id="teacherFab" class="hide" title="교사 전용">🔑 교사용</button>
+<button id="calcFab" class="hide" aria-expanded="false" aria-controls="calcPanel">계산기</button>
+<div id="calcPanel" class="hide" role="dialog" aria-label="사칙연산 계산기">
+  <div class="chist" id="cHist"></div>
+  <div class="cdisp" id="cDisp" aria-live="polite">0</div>
+  <div class="cpad">
+    <button class="clr" data-k="C">C</button>
+    <button data-k="back">←</button>
+    <button class="op" data-k="÷">÷</button>
+    <button class="op" data-k="×">×</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button class="op" data-k="−">−</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button class="op" data-k="+">+</button>
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button class="eq" data-k="=">=</button>
+    <button class="wide" data-k="0">0</button><button data-k=".">.</button>
+  </div>
+  <div class="cnote">사칙연산만 됩니다. 공식은 직접 세우세요.</div>
+</div>
+
+<script>
+/* ═══════════ 연결 설정 ═══════════
+   Apps Script 웹 앱 URL을 아래 따옴표 안에 붙여넣으세요. (…/exec 로 끝나는 주소)
+   비워 두면 브라우저 임시 저장소로 동작합니다(시험용, 응시 코드 검사 생략).       */
+const API_URL = "";
+/* ════════════════════════════════ */
+
+const BANDS=['0~14','15~24','25~34','35~44','45~54','55~64','65~74','75~84','85+'];
+const WID=[15,10,10,10,10,10,10,10,15];
+const DENS=32, GRP=[0,1,1,1,1,1,2,2,2];
 const ORDER=['kr','de','fr','gh','ne','in'];
-const CNAME={kr:'대한민국',de:'독일',fr:'프랑스',gh:'가나',ne:'니제르',in:'인도'};
-const AI_MODEL='claude-sonnet-5';   // 바꾸려면 여기만 고치면 됩니다
-const AI_BATCH=12;                  // 한 번 실행에 채점할 최대 인원 (실행 시간 제한 때문)
+const STAGE_KEY={kr:[5],de:[5],fr:[4,5],gh:[3],ne:[2],in:[3,4]};
+const BASE={
+ kr:{name:'대한민국',flag:'🇰🇷',now:[548,576,638,707,783,868,650,304,94],fut:[377,353,411,478,557,648,719,719,454],tfr:[0.75,1.08],cbr:4.8,cdr:7.0,src:'통계청 「장래인구추계 2022~2072」 중위추계'},
+ de:{name:'독일',flag:'🇩🇪',now:[1161,935,986,1040,1095,1154,930,732,317],fut:[1059,890,913,937,962,987,1009,908,605],tfr:[1.38,1.45],cbr:8.1,cdr:12.1,src:'UN World Population Prospects 2024 중위추계'},
+ fr:{name:'프랑스',flag:'🇫🇷',now:[1132,790,797,803,810,816,726,529,257],fut:[1051,724,741,759,777,796,812,676,444],tfr:[1.62,1.65],cbr:9.9,cdr:9.5,src:'UN World Population Prospects 2024 중위추계'},
+ gh:{name:'가나',flag:'🇬🇭',now:[1239,773,538,375,261,181,90,35,8],fut:[1326,981,806,662,545,448,209,96,27],tfr:[3.50,2.60],cbr:22.9,cdr:7.1,src:'UN World Population Prospects 2024 중위추계'},
+ ne:{name:'니제르',flag:'🇳🇪',now:[1275,617,368,219,131,78,50,18,4],fut:[2436,1512,831,459,251,138,118,45,10],tfr:[5.80,4.20],cbr:43.5,cdr:8.3,src:'UN World Population Prospects 2024 중위추계'},
+ in:{name:'인도',flag:'🇮🇳',now:[35258,28863,23610,19314,15798,12923,6531,3160,843],fut:[29225,24035,23266,22520,21800,21103,13778,8517,2756],tfr:[1.95,1.70],cbr:15.7,cdr:6.6,src:'UN World Population Prospects 2024 중위추계'}
+};
+let DATA=JSON.parse(JSON.stringify(BASE));
 
-const HEAD=[
- '제출시각','수업코드','학번','이름','국가',
- '유소년층비율','청장년층비율','노년층비율','총부양비','노령화지수','지표점수(3)',
- '인구변천단계','단계점수(1)','예측9구간','문항3_근거','문항4_논술',
- '문항3(6)','①지표(2)','②문제(3)','③방안(3)','④세대간정의(2)',
- '문항4소계(10)','자동합계(4)','교사합계(16)','총점(20)','최종제출','채점메모',
- 'AI_문항3(6)','AI_①(2)','AI_②(3)','AI_③(3)','AI_④(2)','AI_총평','AI_확신도','AI_채점시각',
- '로그인계정','원본JSON'
-];
-const C_READ=11, C_STAGE=13;   // 자동 채점 점수 열
-const C_TEACHER=17;            // Q~U 교사 채점
-const C_E4=22, C_AUTO=23, C_TEA=24, C_TOTAL=25, C_FINAL=26, C_MEMO=27;
-const C_AI=28;                 // AB~AI (8칸) AI 채점 초안
-const C_MAIL=36, C_JSON=37;
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const sum=a=>a.reduce((x,y)=>x+y,0), r1=n=>Math.round(n*10)/10;
+const pct=a=>{const s=sum(a);return a.map(v=>v/s*100)};
+const grp=p=>({young:p[0],work:p[1]+p[2]+p[3]+p[4]+p[5],old:p[6]+p[7]+p[8]});
+const indic=p=>{const g=grp(p);return{young:g.young,work:g.work,old:g.old,dep:(g.young+g.old)/g.work*100,age:g.old/g.young*100}};
+const popText=m=>m>=10000?(m/10000).toFixed(2).replace(/\.?0+$/,'')+'억 명':Math.round(m).toLocaleString()+'만 명';
+const esc=t=>String(t==null?'':t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const escBr=t=>esc(t).replace(/\n/g,'<br>');
+/** 학번 끝 두 자리(번호)로 국가를 고르게 배정 */
+const autoCty=sid=>{const n=parseInt(String(sid).trim().slice(-2),10);return ORDER[(isNaN(n)?0:n)%6]};
 
-/* 명렬표 열 (1부터): 1 수업코드 · 2 학번 · 3 이름 · 4 응시코드 · 5 배정국가 · 6 잠금 */
-const R_LOCK=6;
-
-/* ══════════ 메뉴 ══════════ */
-function onOpen(){
-  const ui=SpreadsheetApp.getUi();
-  ui.createMenu('수행평가')
-    .addItem('1. 시트 만들기 · 점검','setup')
-    .addItem('2. 응시 코드 발급','issueCodes')
-    .addItem('3. 예전 시트 새로 만들기','rebuildSheets')
-    .addSeparator()
-    .addItem('명렬표 정리·점검','tidyRoster')
-    .addItem('진단 (문제가 생겼을 때)','diagnose')
-    .addSeparator()
-    .addSubMenu(ui.createMenu('AI 채점')
-      .addItem('API 키 등록','setApiKey')
-      .addItem('연결 시험','testApi')
-      .addSeparator()
-      .addItem('채점 초안 만들기 (미채점분)','aiGradeBatch')
-      .addItem('AI 초안 전부 지우기','aiClear'))
-    .addSeparator()
-    .addItem('논술 답안 모아보기','collectEssays')
-    .addItem('명렬표 배부용 만들기','makeHandout')
-    .addItem('응시 코드 쪽지 만들기','makeSlips')
-    .addSubMenu(ui.createMenu('연습')
-      .addItem('연습용 수업 코드 만들기','setupPractice')
-      .addItem('연습 기록 지우기','clearPractice'))
-    .addToUi();
+/* ── 백엔드 ── */
+const apiUrl=(new URLSearchParams(location.search).get('api'))||API_URL;
+/** 시험 모드에서 저장된 학생 레코드로 결과 객체를 만든다 (서버 resultOf_와 같은 형태) */
+function localResult(r){
+  const t=r.__teacher||{},n=x=>{const v=Number(x);return isNaN(v)?0:v};
+  const auto=n(r.autoRead)+n(r.autoStage);
+  const tea=n(t.pred)+n(t.c1)+n(t.c2)+n(t.c3)+n(t.c4);
+  return{graded:!!r.final,autoRead:n(r.autoRead),autoStage:n(r.autoStage),
+    q3:n(t.pred),c1:n(t.c1),c2:n(t.c2),c3:n(t.c3),c4:n(t.c4),
+    teacherTotal:tea,total:auto+tea,memo:String(r.__memo||''),aiNote:(r.__ai&&r.__ai.note)||''};
 }
-
-const ROSTER_HEAD=['수업코드','학번','이름','응시코드','배정국가','잠금'];
-const CFG_HEAD=['수업코드','PIN','공개여부','결과공개'];
-const DATA_HEAD=['국가코드','국가명','시점','0~14','15~24','25~34','35~44','45~54','55~64','65~74','75~84','85+','합계출산율'];
-const DATA_HEAD2=DATA_HEAD.concat(['조출생률','조사망률']);   // 2025년 행에만 채우면 됩니다
-
-function ss_(){
-  const ss=SpreadsheetApp.getActiveSpreadsheet();
-  if(!ss) throw new Error('스프레드시트에 연결되어 있지 않습니다.\n\n'+
-    '스프레드시트를 열고 「확장 프로그램 → Apps Script」로 만든 프로젝트여야 합니다.\n'+
-    'script.google.com 에서 따로 만든 프로젝트라면 이 코드가 동작하지 않습니다.');
-  return ss;
-}
-function sameHead_(sheet,want){
-  const w=Math.max(sheet.getLastColumn(),want.length);
-  const got=sheet.getRange(1,1,1,w).getValues()[0].map(function(x){return String(x).trim()});
-  for(let i=0;i<want.length;i++) if(got[i]!==want[i]) return false;
-  return true;
-}
-
-/** 시트를 만들고, 이미 있으면 머리글이 맞는지 점검한다 */
-function setup(){
-  const ss=ss_(), ui=SpreadsheetApp.getUi(), log=[];
-  let needFix=false, s;
-
-  s=ss.getSheetByName(S_CFG);
-  if(!s){
-    s=ss.insertSheet(S_CFG);
-    s.getRange(1,1,1,4).setValues([CFG_HEAD]).setFontWeight('bold');
-    s.getRange(2,1,1,4).setValues([['SOC5','1234','FALSE','FALSE']]);
-    s.setFrozenRows(1);
-    log.push('설정 — 새로 만들었습니다');
-  } else if(sameHead_(s,CFG_HEAD)) log.push('설정 — 이상 없음');
-  else {
-    // 예전 3열(수업코드/PIN/공개여부) 설정에 결과공개 열을 덧붙인다
-    if(String(s.getRange(1,4).getValue()).trim()!=='결과공개'){
-      s.getRange(1,4).setValue('결과공개').setFontWeight('bold');
-      const n=s.getLastRow()-1;
-      if(n>0) s.getRange(2,4,n,1).setValue('FALSE');
-      log.push('설정 — 결과공개 열을 새로 추가했습니다');
-    } else log.push('설정 — 이상 없음');
+const LOCAL={
+  async g(k){try{const r=await window.storage.get(k,true);return r&&r.value?JSON.parse(r.value):null}catch(e){return null}},
+  async s(k,v){try{return !!await window.storage.set(k,JSON.stringify(v),true)}catch(e){return false}},
+  async l(p){try{const r=await window.storage.list(p,true);return r&&r.keys?r.keys.map(x=>typeof x==='string'?x:(x.key||'')).filter(Boolean):[]}catch(e){return []}},
+  async call(a,q){
+    const C=`iq-${q.code}-cfg`, S=s=>`iq-${q.code}-s-${s}`;
+    if(a==='state'){const c=await this.g(C)||{};return{ok:true,revealed:!!c.revealed,resultOpen:!!c.resultOpen,data:null}}
+    if(a==='auth'){                                    // 시험 모드: 명렬표 없이 통과
+      const c=await this.g(C)||{};const r=await this.g(S(q.sid));
+      const out={ok:true,name:(r&&r.name)||('학생'+String(q.sid).slice(-2)),cty:(r&&r.cty)||autoCty(q.sid),
+             locked:!!(r&&r.locked),record:r,resultOpen:!!c.resultOpen};
+      if(c.resultOpen&&r&&r.final)out.result=localResult(r);
+      return out}
+    if(a==='result'){const c=await this.g(C)||{};const r=await this.g(S(q.sid));
+      if(!c.resultOpen)return{ok:true,resultOpen:false};
+      return{ok:true,resultOpen:true,result:r&&r.final?localResult(r):null}}
+    if(a==='resultopen'){const c=await this.g(C)||{};
+      if(c.pin&&c.pin!==String(q.pin))return{ok:false,error:'PIN이 맞지 않습니다.'};
+      c.pin=c.pin||String(q.pin);c.resultOpen=!!q.on;await this.s(C,c);return{ok:true,resultOpen:c.resultOpen}}
+    if(a==='submit'){const p=q.payload,old=await this.g(S(p.sid));
+      if(old&&old.locked)return{ok:false,error:'이미 최종 제출되어 잠겨 있습니다.'};
+      if(old&&old.__teacher)p.__teacher=old.__teacher;
+      p.locked=!!p.final;return{ok:await this.s(S(p.sid),p)}}
+    if(a==='roster'){const c=await this.g(C)||{};
+      if(c.pin&&c.pin!==String(q.pin))return{ok:false,error:'PIN이 맞지 않습니다.'};
+      if(!c.pin){c.pin=String(q.pin);await this.s(C,c)}
+      const ks=await this.l(`iq-${q.code}-s-`),rows=[];
+      for(const k of ks){const r=await this.g(k);if(r)rows.push(r)}
+      return{ok:true,rows,revealed:!!c.revealed,resultOpen:!!c.resultOpen}}
+    if(a==='reveal'){const c=await this.g(C)||{};
+      if(c.pin&&c.pin!==String(q.pin))return{ok:false,error:'PIN이 맞지 않습니다.'};
+      c.pin=c.pin||String(q.pin);c.revealed=!!q.on;await this.s(C,c);return{ok:true,revealed:c.revealed}}
+    if(a==='score'){const r=await this.g(S(q.sid));if(!r)return{ok:false,error:'제출을 찾을 수 없습니다.'};
+      r.__teacher=q.scores;r.__memo=q.memo||'';await this.s(S(q.sid),r);return{ok:true}}
+    if(a==='unlock'){const r=await this.g(S(q.sid));if(r){r.locked=false;await this.s(S(q.sid),r)}return{ok:true}}
+    if(a==='aigrade')return{ok:false,error:'AI 채점은 Apps Script를 연결해야 쓸 수 있습니다.'};
+    return{ok:false,error:'알 수 없는 요청'};
   }
+};
+async function api(action,q){
+  if(!apiUrl) return LOCAL.call(action,q);
+  const res=await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(Object.assign({action},q))});
+  if(!res.ok) throw new Error('서버 응답 '+res.status);
+  return await res.json();
+}
+(function(){const el=$('#conn');
+  if(apiUrl){el.className='banner on';el.textContent='구글 스프레드시트에 저장됩니다. 명렬표에 등록된 학생만 응시할 수 있습니다.'}
+  else{el.className='banner off';el.innerHTML='<b>시험 모드</b> — Apps Script가 연결되지 않아 응시 코드 검사를 건너뜁니다. 실제 평가 전에 HTML 맨 위 <code>API_URL</code>에 웹 앱 주소를 넣으세요.'}})();
 
-  s=ss.getSheetByName(S_ROSTER);
-  if(!s){ makeRoster_(ss); log.push('명렬표 — 새로 만들었습니다'); }
-  else if(sameHead_(s,ROSTER_HEAD)) log.push('명렬표 — 이상 없음');
-  else{
-    needFix=true;
-    const got=s.getRange(1,1,1,Math.max(s.getLastColumn(),1)).getValues()[0].filter(String).join(' / ');
-    log.push('명렬표 — ⚠ 예전 형식입니다\n    지금: '+got+'\n    필요: '+ROSTER_HEAD.join(' / '));
+/* ── 상태 ── */
+let code='SOC5',me={},cty='kr',pred=null,stage=null,revealed=false,rec=null,rows=[],poll=null,saveTimer=null;
+let curStep=1;
+
+/* ── 응시 감독 (화면 이탈 감지) ──
+   PROCTOR_LIMIT: 이탈 몇 회에서 자동 제출할지. 1 = 한 번만 벗어나도 즉시 제출.
+   문항 작성 화면(2·3·5)에서만 작동하며, 대기 화면(4)에서는 세지 않습니다.       */
+const PROCTOR_LIMIT=1;
+let proctorOn=false, leaveCount=0, leaveLog=[], autoSubmitting=false, pendingLock=false, wakeLock=null;
+
+async function reqWake(){ try{ if('wakeLock' in navigator){ wakeLock=await navigator.wakeLock.request('screen'); } }catch(e){} }
+function relWake(){ try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
+function startProctor(){ if(!proctorOn){ proctorOn=true; reqWake(); } }
+function stopProctor(){ if(proctorOn){ proctorOn=false; relWake(); } }
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ if(proctorOn && !autoSubmitting) onLeave(); }
+  else { if(proctorOn) reqWake(); if(pendingLock){ pendingLock=false; showAutoSubmitted(); } }
+});
+function onLeave(){
+  leaveCount++; leaveLog.push(new Date().toISOString());
+  if(leaveCount>=PROCTOR_LIMIT){
+    autoSubmitting=true; stopProctor(); pendingLock=true;
+    forceSubmit('화면 이탈');
   }
-
-  s=ss.getSheetByName(S_SUB);
-  if(!s){ makeSub_(ss); log.push('제출 — 새로 만들었습니다'); }
-  else if(sameHead_(s,HEAD)) log.push('제출 — 이상 없음');
-  else{ needFix=true; log.push('제출 — ⚠ 예전 형식입니다 (지금 '+s.getLastColumn()+'열, 필요 '+HEAD.length+'열)'); }
-
-  s=ss.getSheetByName(S_DATA);
-  if(!s){
-    s=ss.insertSheet(S_DATA);
-    s.getRange(1,1,1,15).setValues([DATA_HEAD2]).setFontWeight('bold');
-    s.getRange(2,1,12,15).setValues(DEFAULT_DATA());
-    s.setFrozenRows(1);
-    log.push('기준데이터 — 새로 만들었습니다');
-  } else log.push('기준데이터 — '+(sameHead_(s,DATA_HEAD)?'이상 없음':'⚠ 머리글이 다릅니다'));
-
-  ui.alert('시트 점검 결과', log.join('\n\n')+
-    (needFix?'\n\n──────────\n예전 형식의 시트가 있습니다.\n「수행평가 → 3. 예전 시트 새로 만들기」를 실행하면\n지금 것을 백업으로 남겨 두고 새 형식으로 다시 만듭니다.'
-           :'\n\n모두 정상입니다.'), ui.ButtonSet.OK);
+}
+/** 현재 화면 상태로 답안을 모아 강제 최종 제출 */
+function snapshot(){
+  const d=DATA[cty]||DATA.kr, t=indic(pct(d.now));
+  const read={young:num('#aYoung'),work:num('#aWork'),old:num('#aOld'),dep:num('#aDep'),age:num('#aAge')};
+  const base=rec||{sid:me.sid,name:me.name,pass:me.pass,cty,countryName:d.name};
+  base.read=read; base.autoRead=scoreRead(read,t);
+  base.stage=stage; base.autoStage=(STAGE_KEY[cty]||[]).includes(stage)?1:0;
+  base.pred=(pred||Array(9).fill(0)).map(r1);
+  base.predReason=($('#aPredR').value||'').trim();
+  const ess=($('#aEssay').value||'').trim(); base.essay=ess||base.essay||'';
+  return base;
+}
+async function forceSubmit(reason){
+  const r=snapshot();
+  r.final=true; r.finalAt=new Date().toISOString();
+  r.autoSubmitted=true; r.autoReason=reason; r.leaves=leaveCount; r.leaveLog=leaveLog;
+  rec=r;
+  try{ await api('submit',{code,payload:rec}); }catch(e){}
+  try{ buildSheet(); }catch(e){}
+}
+function showAutoSubmitted(){
+  $('#s6title').textContent='제출되었습니다';
+  const n=$('#s6auto'); if(n){ n.classList.remove('hide');
+    n.textContent='화면을 벗어나 자동으로 제출되었습니다. 더 이상 수정할 수 없습니다. 이의가 있으면 선생님께 말씀드리세요.'; }
+  step(6);
 }
 
-function makeRoster_(ss){
-  const s=ss.insertSheet(S_ROSTER);
-  s.getRange('B:B').setNumberFormat('@');       // 값을 넣기 전에 먼저 문자 서식으로
-  s.getRange('D:D').setNumberFormat('@');
-  s.getRange(1,1,1,ROSTER_HEAD.length).setValues([ROSTER_HEAD]).setFontWeight('bold');
-  s.getRange(2,1,1,6).setValues([['SOC5','10101','예시학생','','','']]);
-  s.setFrozenRows(1);
-  s.setColumnWidths(1,6,110);
-  s.getRange('B1').setNote('다섯 자리 학번. 예: 10101 = 1학년 1반 1번');
-  s.getRange('E1').setNote('kr 대한민국 / de 독일 / fr 프랑스 / gh 가나 / ne 니제르 / in 인도\n비워 두면 학번 끝 두 자리(번호)를 기준으로 자동 배정됩니다.');
+/* ── 교사 버튼(모든 화면) · 처음/이전 이동 ── */
+let returnView=null;
+function updateChrome(){
+  const fab=$('#teacherFab'); if(!fab) return;
+  const onTeacher=!$('#scrTeacher').classList.contains('hide');
+  const onGate=!$('#scrGate').classList.contains('hide');
+  // 응시(문항 작성) 중이거나 교사 화면이면 숨김. 그 밖의 모든 화면에서 표시.
+  fab.classList.toggle('hide', proctorOn || onTeacher || onGate);
+}
+function openTeacher(){
+  const stu=!$('#scrStudent').classList.contains('hide');
+  returnView = stu ? {student:true,step:curStep} : {gate:true};
+  code=clean($('#gCode').value)||code||'SOC5';
+  show('scrTeacher');
+}
+function goHome(){
+  stopProctor(); autoSubmitting=false; pendingLock=false; leaveCount=0; leaveLog=[];
+  returnView=null; rec=null; pred=null; stage=null; stopPoll();
+  show('scrGate'); step(1);
+}
+
+function show(id){['scrGate','scrStudent','scrTeacher'].forEach(s=>$('#'+s).classList.toggle('hide',s!==id));
+  const door=$('#teacherDoor');if(door)door.style.display=(id==='scrGate')?'':'none';
+  if(id!=='scrStudent') stopProctor();
+  if(window.calcVisible&&id!=='scrStudent')window.calcVisible(false);
+  updateChrome();scrollTo(0,0)}
+function step(n){curStep=n;['s1','s2','s3','s4','s5','s6','s7'].forEach((s,i)=>$('#'+s).classList.toggle('hide',i!==n-1));
+  const k=Math.min(n,5);$$('#stSteps div').forEach((d,i)=>d.className=i<k-1?'done':(i===k-1?'on':''));
+  $('#stSteps').style.display=(n>=6)?'none':'';
+  if(window.calcVisible)window.calcVisible(n>=2&&n<=5);
+  if(n===2||n===3||n===5) startProctor(); else stopProctor();
+  updateChrome();scrollTo(0,0)}
+
+/* ── 피라미드 ── */
+function drawPyr(el,o){
+  const {values,ghost=null,editable=false,onChange=null,color=true,showDelta=false}=o;
+  el.innerHTML='';const parts=[];
+  for(let i=8;i>=0;i--){
+    const row=document.createElement('div');row.className='prow'+(color?' g'+GRP[i]:'');
+    const lab=document.createElement('div');lab.className='plab';lab.textContent=BANDS[i];
+    const bar=document.createElement('div');bar.className='pbar';bar.style.height=Math.round(16+WID[i]*0.55)+'px';
+    bar.innerHTML='<div class="axis"></div>';
+    if(ghost){const gw=Math.min(ghost[i]/WID[i]*10,DENS)/DENS*50;
+      bar.insertAdjacentHTML('beforeend',`<div class="ghostbar l" style="width:${gw}%"></div><div class="ghostbar r" style="width:${gw}%"></div>`)}
+    const w=Math.min(values[i]/WID[i]*10,DENS)/DENS*50;
+    bar.insertAdjacentHTML('beforeend',`<div class="fill l" style="width:${w}%"></div><div class="fill r" style="width:${w}%"></div>`);
+    const val=document.createElement('div');val.className='pval';val.textContent=values[i].toFixed(1)+'%';
+    row.append(lab,bar,val);parts[i]={bar,val,fills:bar.querySelectorAll('.fill')};
+    if(showDelta&&ghost){const d=values[i]-ghost[i];const dv=document.createElement('div');
+      dv.className='pdel '+(d>0?'up':'down');dv.textContent=(d>0?'+':'')+d.toFixed(1);row.append(dv)}
+    if(editable){
+      bar.tabIndex=0;bar.setAttribute('role','slider');bar.setAttribute('aria-label',BANDS[i]+'세 비율');
+      bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax',String(DENS));
+      const set=e=>{const rc=bar.getBoundingClientRect();
+        const x=e.clientX!==undefined?e.clientX:(e.touches&&e.touches[0].clientX);
+        const d=Math.abs(x-(rc.left+rc.width/2))/(rc.width/2)*DENS;
+        onChange(i,Math.max(0,r1(Math.min(DENS,d)*WID[i]/10)))};
+      bar.addEventListener('pointerdown',e=>{bar.setPointerCapture(e.pointerId);set(e);e.preventDefault()});
+      bar.addEventListener('pointermove',e=>{if(bar.hasPointerCapture(e.pointerId))set(e)});
+      bar.addEventListener('keydown',e=>{const s=e.shiftKey?1:0.2;let v=values[i];
+        if(e.key==='ArrowRight'||e.key==='ArrowUp')v+=s;else if(e.key==='ArrowLeft'||e.key==='ArrowDown')v=Math.max(0,v-s);else return;
+        e.preventDefault();onChange(i,r1(v))})}
+    el.appendChild(row);
+  }
+  return vals=>{for(let i=0;i<9;i++){const p=parts[i],w=Math.min(vals[i]/WID[i]*10,DENS)/DENS*50;
+    p.fills.forEach(f=>f.style.width=w+'%');p.val.textContent=vals[i].toFixed(1)+'%';
+    if(editable)p.bar.setAttribute('aria-valuenow',vals[i].toFixed(1))}};
+}
+
+/* ── 자동 채점 (4점) ── */
+function scoreRead(a,t){
+  let s=0;const ok=(x,y,tol)=>x!==null&&!isNaN(x)&&Math.abs(x-y)<=tol;
+  if(ok(a.young,t.young,0.5)&&ok(a.work,t.work,0.5)&&ok(a.old,t.old,0.5))s++;
+  if(ok(a.dep,t.dep,2))s++;
+  if(ok(a.age,t.age,Math.max(3,t.age*0.05)))s++;
   return s;
 }
-function makeSub_(ss){
-  const s=ss.insertSheet(S_SUB);
-  s.getRange('C:C').setNumberFormat('@');
-  s.getRange(1,1,1,HEAD.length).setValues([HEAD]).setFontWeight('bold');
-  s.setFrozenRows(1); s.setFrozenColumns(4);
-  s.getRange(1,C_TEACHER,1,5).setBackground('#FFF2CC');   // 교사 채점란
-  s.getRange(1,C_AI,1,8).setBackground('#E8E0F7');        // AI 초안
-  return s;
+function dirNote(p,now,fut){
+  const g=grp(p),n=grp(now),f=grp(fut),out=[];
+  const j=(l,pv,nv,fv)=>out.push(`${l} ${Math.sign(pv-nv)===Math.sign(fv-nv)?'방향 일치':'방향 불일치'}`);
+  j('유소년층',g.young,n.young,f.young);j('노년층',g.old,n.old,f.old);return out.join(' · ');
+}
+function tagsOf(p,now,fut){
+  const t=[],g=grp(p),f=grp(fut),d=(a,b)=>a.reduce((s,v,i)=>s+Math.abs(v-b[i]),0);
+  if(g.young-f.young>5)t.push({t:'유소년층 과대',c:'t1'});
+  if(f.old-g.old>6)t.push({t:'노년층 과소',c:'t2'});
+  if(fut[8]-p[8]>4)t.push({t:'85세 이상 과소',c:'t2'});
+  if(d(p,now)<d(p,fut)&&d(p,now)<25)t.push({t:'구조 고정',c:'t3'});
+  if(!t.length)t.push({t:'양호',c:'ok'});return t;
 }
 
-/** 예전 형식 시트를 백업으로 남기고 새 형식으로 다시 만든다 */
-function rebuildSheets(){
-  const ss=ss_(), ui=SpreadsheetApp.getUi();
-  const stamp=Utilities.formatDate(new Date(),Session.getScriptTimeZone(),'MMdd_HHmm');
-  const targets=[];
-  let s=ss.getSheetByName(S_ROSTER); if(s&&!sameHead_(s,ROSTER_HEAD)) targets.push(S_ROSTER);
-  s=ss.getSheetByName(S_SUB);        if(s&&!sameHead_(s,HEAD))        targets.push(S_SUB);
-  if(!targets.length){ ui.alert('예전 형식의 시트가 없습니다. 그대로 쓰시면 됩니다.'); return; }
-  if(ui.alert('예전 시트 새로 만들기',
-    targets.join(', ')+' 시트를 「이름_백업_'+stamp+'」로 남겨 두고 새 형식으로 다시 만듭니다.\n'+
-    '백업 시트의 내용은 지워지지 않으니 학번과 이름을 복사해 오시면 됩니다.\n\n계속할까요?',
-    ui.ButtonSet.OK_CANCEL)!==ui.Button.OK) return;
-  targets.forEach(function(name){
-    ss.getSheetByName(name).setName(name+'_백업_'+stamp);
-    if(name===S_ROSTER) makeRoster_(ss); else makeSub_(ss);
-  });
-  ui.alert('다시 만들었습니다.\n\n백업 시트에서 학번과 이름을 새 명렬표로 옮긴 뒤\n「2. 응시 코드 발급」을 실행하세요.');
+/* ── 학생 ── */
+function buildStage(){
+  const s=$('#cStage');s.innerHTML='';
+  [1,2,3,4,5].forEach(n=>{const b=document.createElement('button');b.textContent=n+'단계';
+    b.setAttribute('aria-pressed',stage===n);b.onclick=()=>{stage=n;buildStage()};s.appendChild(b)});
+}
+function renderRead(){
+  const d=DATA[cty];
+  $('#rdName').textContent=d.flag+' '+d.name;$('#prName').textContent=d.name;$('#soName').textContent=d.name;
+  $('#whoLine').textContent=`${me.sid} ${me.name} · 배정 국가 ${d.name}`;
+  drawPyr($('#pyrNow'),{values:pct(d.now)});
+  $('#rdTable').innerHTML='<table><thead><tr>'+BANDS.map(b=>`<th>${b}</th>`).join('')+
+    '</tr></thead><tbody><tr>'+d.now.map(v=>`<td>${v.toLocaleString()}</td>`).join('')+'</tr></tbody></table>';
+  $('#rdTot').textContent=popText(sum(d.now));$('#rdTfr').textContent=d.tfr[0].toFixed(2)+'명';
+  $('#mCbr').textContent=d.cbr.toFixed(1);$('#mCdr').textContent=d.cdr.toFixed(1);
+  $('#mTfr').textContent=d.tfr[0].toFixed(2);
+}
+let upd=null;
+function refreshPred(){
+  const s=r1(sum(pred)), left=r1(Math.max(0,100-s)), done=Math.abs(s-100)<=0.05;
+  $('#sumVal').textContent=left.toFixed(1);
+  $('#sumBar').className='sumbar '+(done?'good':'bad');
+  $('#sumHint').textContent=done
+    ? '아홉 계급의 합이 100%입니다. 어떤 계급을 늘리려면 다른 계급을 먼저 줄이세요.'
+    : `아직 ${left.toFixed(1)}%가 남았습니다. 남은 몫을 모두 나눠 주어야 제출할 수 있습니다.`;
+  const g=grp(pred);$('#pmY').textContent=g.young.toFixed(1)+'%';
+  $('#pmW').textContent=g.work.toFixed(1)+'%';$('#pmO').textContent=g.old.toFixed(1)+'%';
+}
+/** 남은 몫을 넘겨 받을 수 없도록 잘라 낸다 */
+function setBand(i,v){
+  const others=r1(sum(pred)-pred[i]), max=r1(Math.max(0,100-others));
+  pred[i]=Math.max(0,Math.min(r1(v),max));
+  upd(pred);refreshPred();
+}
+function renderPred(){upd=drawPyr($('#pyrPred'),{values:pred,editable:true,onChange:setBand});refreshPred()}
+function syncPred(){if(upd)upd(pred);refreshPred()}
+function normalizeTo100(){
+  const s=sum(pred); if(s<=0)return;
+  pred=pred.map(v=>r1(v/s*100));
+  const d=r1(100-sum(pred));
+  if(d!==0){let m=0;for(let i=1;i<9;i++)if(pred[i]>pred[m])m=i;pred[m]=r1(Math.max(0,pred[m]+d))}
+  syncPred();
+}
+const num=s=>{const v=parseFloat($(s).value);return isNaN(v)?null:v};
+
+async function submit1(){
+  const e=$('#e3');e.textContent='';
+  if(Math.abs(sum(pred)-100)>0.05){e.textContent=`아직 ${r1(100-sum(pred)).toFixed(1)}%가 남았습니다. 남은 몫을 모두 나눠 주세요.`;return}
+  if($('#aPredR').value.trim().length<100){e.textContent='문항 3의 근거를 100자 이상 써 주세요.';return}
+  const d=DATA[cty],t=indic(pct(d.now));
+  const read={young:num('#aYoung'),work:num('#aWork'),old:num('#aOld'),dep:num('#aDep'),age:num('#aAge')};
+  rec={sid:me.sid,name:me.name,pass:me.pass,cty,countryName:d.name,
+       read,autoRead:scoreRead(read,t),stage,autoStage:(STAGE_KEY[cty]||[]).includes(stage)?1:0,
+       pred:pred.map(r1),predReason:$('#aPredR').value.trim(),essay:'',
+       at:new Date().toISOString(),final:false};
+  const b=$('#bSubmit');b.disabled=true;
+  try{const r=await api('submit',{code,payload:rec});if(!r.ok)throw new Error(r.error||'저장 실패');
+    drawPyr($('#pyrWait'),{values:pred,color:false});step(4);startPoll();
+  }catch(err){e.textContent='저장하지 못했습니다 — '+err.message}
+  b.disabled=false;
+}
+function startPoll(){stopPoll();poll=setInterval(check,7000);check()}
+function stopPoll(){if(poll)clearInterval(poll);poll=null}
+async function check(){
+  try{const r=await api('state',{code});if(r.data)mergeData(r.data);
+    if(r.revealed){stopPoll();openEssay()}
+    else $('#waitPill').textContent='공개를 기다리는 중… ('+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+')';
+  }catch(e){$('#waitPill').textContent='연결 확인 중…'}
+}
+function mergeData(d){Object.keys(d||{}).forEach(k=>{if(DATA[k]&&d[k].now&&d[k].fut){
+  DATA[k].now=d[k].now;DATA[k].fut=d[k].fut;if(d[k].tfr)DATA[k].tfr=[d[k].tfr.now,d[k].tfr.fut];
+  if(d[k].cbr)DATA[k].cbr=d[k].cbr;if(d[k].cdr)DATA[k].cdr=d[k].cdr}})}
+
+function openEssay(){
+  const d=DATA[cty],now=pct(d.now),fut=pct(d.fut),t=indic(now),tf=indic(fut),f=x=>x===null?'–':x.toFixed(1);
+  $('#scBox').innerHTML=`<div class="jua" style="margin-bottom:6px">문항 1·2 채점 결과 — ${rec.autoRead+rec.autoStage} / 4점</div>
+    <table><thead><tr><th>항목</th><th>내 답</th><th>정답</th></tr></thead><tbody>`+
+    [['유소년층 비율',rec.read.young,t.young],['청장년층 비율',rec.read.work,t.work],['노년층 비율',rec.read.old,t.old],
+     ['총부양비',rec.read.dep,t.dep],['노령화 지수',rec.read.age,t.age]]
+    .map(([k,x,y])=>`<tr><td>${k}</td><td>${f(x)}</td><td><b>${y.toFixed(1)}</b></td></tr>`).join('')+
+    `<tr><td>인구 변천 단계</td><td>${rec.stage}단계</td><td><b>${(STAGE_KEY[cty]||[]).join(' 또는 ')}단계</b></td></tr></tbody></table>`;
+  drawPyr($('#pyrRev'),{values:rec.pred,ghost:fut,color:false,showDelta:true});
+  const pi=indic(rec.pred);
+  $('#rvTable').innerHTML=[['유소년층 비율',t.young,pi.young,tf.young],['청장년층 비율',t.work,pi.work,tf.work],
+    ['노년층 비율',t.old,pi.old,tf.old],['총부양비',t.dep,pi.dep,tf.dep],['노령화 지수',t.age,pi.age,tf.age]]
+    .map(([k,a,b,c])=>`<tr><td>${k}</td><td>${a.toFixed(1)}</td><td>${b.toFixed(1)}</td><td><b>${c.toFixed(1)}</b></td></tr>`).join('');
+  $('#rvTags').innerHTML=tagsOf(rec.pred,now,fut).map(x=>`<span class="tag ${x.c}">${x.t}</span>`).join('');
+  $('#rvSrc').textContent=`2050년 ${d.name} 추계 인구 ${popText(sum(d.fut))} · 출처: ${d.src}`;
+  if(rec.essay)$('#aEssay').value=rec.essay;
+  $('#aEssay').dispatchEvent(new Event('input'));
+  step(5);
+}
+async function autoSave(){
+  if(!rec||rec.final)return;
+  rec.essay=$('#aEssay').value;
+  try{await api('submit',{code,payload:rec});
+    $('#autoSave').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}
+  catch(e){$('#autoSave').textContent='실패'}
+}
+async function submitFinal(){
+  const e=$('#e5');e.textContent='';e.style.color='#C9556F';
+  const v=$('#aEssay').value.trim();
+  if(v.length<500){e.textContent=`답안을 500자 이상 써 주세요. (현재 ${v.length}자)`;return}
+  if(!confirm('최종 제출하면 더 이상 고칠 수 없습니다. 제출할까요?'))return;
+  rec.essay=v;rec.final=true;rec.finalAt=new Date().toISOString();
+  rec.leaves=leaveCount;rec.leaveLog=leaveLog;
+  const b=$('#bFinal');b.disabled=true;
+  try{const r=await api('submit',{code,payload:rec});if(!r.ok)throw new Error(r.error||'저장 실패');
+    buildSheet();step(6);
+  }catch(err){e.textContent='저장하지 못했습니다 — '+err.message;b.disabled=false}
+}
+function buildSheet(){
+  const d=DATA[cty],t=indic(pct(d.now)),f=x=>x===null?'–':x.toFixed(1);
+  $('#sheet').innerHTML=`
+   <h2>통합사회2 Ⅴ단원 「세계의 인구와 인구 문제」 서논술형 수행평가 답안</h2>
+   <table><tbody>
+     <tr><th>학번</th><td>${esc(me.sid)}</td><th>이름</th><td>${esc(me.name)}</td></tr>
+     <tr><th>배정 국가</th><td>${esc(d.name)}</td><th>제출</th><td>${new Date(rec.finalAt).toLocaleString('ko-KR')}</td></tr>
+   </tbody></table>
+   <h3>문항 1·2 (4점)</h3>
+   <table><thead><tr><th>항목</th><th>내 답</th><th>정답</th></tr></thead><tbody>
+     ${[['유소년층 비율',rec.read.young,t.young],['청장년층 비율',rec.read.work,t.work],['노년층 비율',rec.read.old,t.old],
+        ['총부양비',rec.read.dep,t.dep],['노령화 지수',rec.read.age,t.age]]
+       .map(([k,x,y])=>`<tr><td>${k}</td><td>${f(x)}</td><td>${y.toFixed(1)}</td></tr>`).join('')}
+     <tr><td>인구 변천 단계</td><td>${rec.stage}단계</td><td>${(STAGE_KEY[cty]||[]).join(' 또는 ')}단계</td></tr>
+   </tbody></table>
+   <h3>문항 3 — 2050년 인구 구조 예측 (6점)</h3>
+   <table><thead><tr>${BANDS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
+     <tbody><tr>${rec.pred.map(v=>`<td>${v.toFixed(1)}%</td>`).join('')}</tr></tbody></table>
+   <div class="ans">${escBr(rec.predReason)}</div>
+   <h3>문항 4 — 인구 문제 진단과 해결 방안 (10점) · ${rec.essay.length}자</h3>
+   <div class="ans">${escBr(rec.essay)}</div>
+   <div class="sign">위 답안은 본인이 직접 작성한 것임을 확인합니다. &nbsp;&nbsp; 확인 ______________ (서명)</div>`;
 }
 
-/** 명렬표 정리 — 앞뒤 공백 제거, 학번을 문자로, 빈칸·중복 점검 */
-function tidyRoster(){
-  const ss=ss_(), ui=SpreadsheetApp.getUi(), sh=ss.getSheetByName(S_ROSTER);
-  if(!sh){ ui.alert('명렬표 시트가 없습니다. 「1. 시트 만들기」를 먼저 실행하세요.'); return; }
-  if(!sameHead_(sh,ROSTER_HEAD)){ ui.alert('명렬표가 예전 형식입니다.\n「3. 예전 시트 새로 만들기」를 먼저 실행하세요.'); return; }
-  const last=sh.getLastRow();
-  if(last<2){ ui.alert('명렬표에 학생이 없습니다.'); return; }
-  sh.getRange('B:B').setNumberFormat('@');
-  sh.getRange('D:D').setNumberFormat('@');
-  const v=sh.getRange(2,1,last-1,6).getValues();
-  const seen={}, dup=[], noSid=[], noName=[];
-  for(let i=0;i<v.length;i++){
-    for(let c=0;c<6;c++) v[i][c]=String(v[i][c]==null?'':v[i][c]).trim();
-    if(!v[i][1] && !v[i][2]) continue;                 // 완전히 빈 줄은 넘어감
-    if(!v[i][0]) v[i][0]='SOC5';                       // 수업코드가 비면 기본값
-    if(!v[i][1]) noSid.push(i+2);
-    if(!v[i][2]) noName.push(i+2);
-    if(v[i][1]){ const k=v[i][0]+'/'+v[i][1]; if(seen[k]) dup.push(v[i][1]); else seen[k]=1; }
+/* ── 학생 결과 조회 ── */
+let lastResult=null;
+function showResult(res){
+  const d=DATA[cty],t=indic(pct(d.now)),f=x=>x==null?'–':Number(x).toFixed(1);
+  $('#rsName').textContent=`· ${me.sid} ${me.name} · ${d.name}`;
+
+  if(!res){   // 결과는 공개됐지만 이 학생 채점 데이터를 못 찾은 경우
+    $('#rsTotal').textContent='–';
+    $('#rsBreak').innerHTML='<tr><td colspan="3" class="muted">아직 채점 결과가 없습니다. 선생님께 문의하세요.</td></tr>';
+  } else {
+    lastResult=res;
+    $('#rsTotal').textContent=res.total;
+    const auto1=(Number(res.autoRead)||0), auto2=(Number(res.autoStage)||0);
+    const e4=(Number(res.c1)||0)+(Number(res.c2)||0)+(Number(res.c3)||0)+(Number(res.c4)||0);
+    const q4detail=`<tr class="muted"><td style="padding-left:18px">└ ① 지표 인용</td><td>2</td><td>${res.c1}</td></tr>`+
+      `<tr class="muted"><td style="padding-left:18px">└ ② 문제 진단</td><td>3</td><td>${res.c2}</td></tr>`+
+      `<tr class="muted"><td style="padding-left:18px">└ ③ 해결 방안</td><td>3</td><td>${res.c3}</td></tr>`+
+      `<tr class="muted"><td style="padding-left:18px">└ ④ 세대 간 정의</td><td>2</td><td>${res.c4}</td></tr>`;
+    $('#rsBreak').innerHTML=
+      `<tr><td>문항 1. 인구 지표 산출</td><td>3</td><td><b>${auto1}</b></td></tr>`+
+      `<tr><td>문항 2. 인구 변천 단계</td><td>1</td><td><b>${auto2}</b></td></tr>`+
+      `<tr><td>문항 3. 2050년 예측과 근거</td><td>6</td><td><b>${res.q3}</b></td></tr>`+
+      `<tr><td>문항 4. 진단과 해결 방안</td><td>10</td><td><b>${e4}</b></td></tr>`+
+      q4detail+
+      `<tr style="border-top:2px solid var(--line)"><td><b>합계</b></td><td><b>20</b></td><td><b>${res.total}</b></td></tr>`;
+
+    // 선생님 피드백 / AI 피드백
+    const memo=String(res.memo||'').trim();
+    $('#rsMemoWrap').classList.toggle('hide',!memo);
+    if(memo)$('#rsMemo').textContent=memo;
+    const ai=String(res.aiNote||'').trim();
+    $('#rsAiWrap').classList.toggle('hide',!ai);
+    if(ai)$('#rsAi').textContent=ai;
   }
-  sh.getRange(2,1,v.length,6).setValues(v);
-  const msg=['학생 '+Object.keys(seen).length+'명을 확인했습니다.'];
-  if(noSid.length)  msg.push('⚠ 학번이 빈 줄: '+noSid.join(', '));
-  if(noName.length) msg.push('⚠ 이름이 빈 줄: '+noName.join(', '));
-  if(dup.length)    msg.push('⚠ 학번 중복: '+dup.join(', '));
-  if(!noSid.length&&!noName.length&&!dup.length) msg.push('빈칸이나 중복이 없습니다.');
-  ui.alert('명렬표 정리 결과', msg.join('\n'), ui.ButtonSet.OK);
+
+  // 문항 1·2 내 답 vs 정답
+  $('#rsKey').innerHTML='<table><thead><tr><th>항목</th><th>내 답</th><th>정답</th></tr></thead><tbody>'+
+    [['유소년층 비율',rec.read.young,t.young],['청장년층 비율',rec.read.work,t.work],['노년층 비율',rec.read.old,t.old],
+     ['총부양비',rec.read.dep,t.dep],['노령화 지수',rec.read.age,t.age]]
+    .map(([k,x,y])=>`<tr><td>${k}</td><td>${f(x)}</td><td><b>${y.toFixed(1)}</b></td></tr>`).join('')+
+    `<tr><td>인구 변천 단계</td><td>${rec.stage}단계</td><td><b>${(STAGE_KEY[cty]||[]).join(' 또는 ')}단계</b></td></tr></tbody></table>`;
+
+  $('#rsQ3').innerHTML=escBr(rec.predReason)||'<span class="muted">미작성</span>';
+  $('#rsQ4').innerHTML=escBr(rec.essay)||'<span class="muted">미작성</span>';
+  $('#rsQ4Len').textContent=(rec.essay||'').length+'자';
+
+  buildResultSheet(res);
 }
 
-/** 지금 시트 상태를 그대로 보여 준다 */
-function diagnose(){
-  const ss=ss_(), ui=SpreadsheetApp.getUi(), out=[];
-  out.push('스프레드시트: '+ss.getName());
-  out.push('시트 목록: '+ss.getSheets().map(function(s){return s.getName()}).join(', '));
-  out.push('');
-  [[S_CFG,CFG_HEAD],[S_ROSTER,ROSTER_HEAD],[S_SUB,HEAD],[S_DATA,DATA_HEAD]].forEach(function(p){
-    const s=ss.getSheetByName(p[0]);
-    if(!s){ out.push('['+p[0]+'] 없음'); return; }
-    const got=s.getRange(1,1,1,Math.max(s.getLastColumn(),1)).getValues()[0]
-      .map(function(x){return String(x).trim()}).filter(String);
-    out.push('['+p[0]+'] '+Math.max(s.getLastRow()-1,0)+'행 · '+(sameHead_(s,p[1])?'형식 정상':'⚠ 형식 불일치'));
-    out.push('  머리글: '+got.join(' / '));
-  });
-  const sh=ss.getSheetByName(S_ROSTER);
-  if(sh&&sh.getLastRow()>1){
-    const r=sh.getRange(2,1,Math.min(3,sh.getLastRow()-1),6).getValues();
-    out.push(''); out.push('명렬표 앞 세 줄');
-    r.forEach(function(x,i){ out.push('  '+(i+2)+'행: '+x.map(function(y){return '['+y+']'}).join(' ')); });
+/** 인쇄용: 점수·정답·피드백까지 담은 결과표 */
+function buildResultSheet(res){
+  const d=DATA[cty],t=indic(pct(d.now)),f=x=>x==null?'–':Number(x).toFixed(1);
+  const memo=String((res&&res.memo)||'').trim(), ai=String((res&&res.aiNote)||'').trim();
+  const e4=res?((Number(res.c1)||0)+(Number(res.c2)||0)+(Number(res.c3)||0)+(Number(res.c4)||0)):0;
+  $('#sheet').innerHTML=`
+   <h2>통합사회2 Ⅴ단원 「세계의 인구와 인구 문제」 수행평가 결과표</h2>
+   <table><tbody>
+     <tr><th>학번</th><td>${esc(me.sid)}</td><th>이름</th><td>${esc(me.name)}</td></tr>
+     <tr><th>배정 국가</th><td>${esc(d.name)}</td><th>총점</th><td><b>${res?res.total:'–'} / 20점</b></td></tr>
+   </tbody></table>
+   <h3>문항별 점수</h3>
+   <table><thead><tr><th>문항</th><th>배점</th><th>점수</th></tr></thead><tbody>
+     <tr><td>문항 1. 인구 지표 산출</td><td>3</td><td>${res?res.autoRead:'–'}</td></tr>
+     <tr><td>문항 2. 인구 변천 단계</td><td>1</td><td>${res?res.autoStage:'–'}</td></tr>
+     <tr><td>문항 3. 2050년 예측과 근거</td><td>6</td><td>${res?res.q3:'–'}</td></tr>
+     <tr><td>문항 4. 진단과 해결 방안</td><td>10</td><td>${res?e4:'–'}</td></tr>
+     <tr><td style="padding-left:16px">└ ① 지표 인용 / ② 문제 / ③ 방안 / ④ 세대 간 정의</td><td>2·3·3·2</td><td>${res?`${res.c1}·${res.c2}·${res.c3}·${res.c4}`:'–'}</td></tr>
+     <tr><td><b>합계</b></td><td><b>20</b></td><td><b>${res?res.total:'–'}</b></td></tr>
+   </tbody></table>
+   <h3>문항 1·2 — 내 답과 정답</h3>
+   <table><thead><tr><th>항목</th><th>내 답</th><th>정답</th></tr></thead><tbody>
+     ${[['유소년층 비율',rec.read.young,t.young],['청장년층 비율',rec.read.work,t.work],['노년층 비율',rec.read.old,t.old],
+        ['총부양비',rec.read.dep,t.dep],['노령화 지수',rec.read.age,t.age]]
+       .map(([k,x,y])=>`<tr><td>${k}</td><td>${f(x)}</td><td>${y.toFixed(1)}</td></tr>`).join('')}
+     <tr><td>인구 변천 단계</td><td>${rec.stage}단계</td><td>${(STAGE_KEY[cty]||[]).join(' 또는 ')}단계</td></tr>
+   </tbody></table>
+   <h3>문항 3 — 2050년 인구 구조 예측 (6점)</h3>
+   <table><thead><tr>${BANDS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
+     <tbody><tr>${rec.pred.map(v=>`<td>${v.toFixed(1)}%</td>`).join('')}</tr></tbody></table>
+   <div class="ans">${escBr(rec.predReason)}</div>
+   <h3>문항 4 — 인구 문제 진단과 해결 방안 (10점) · ${rec.essay.length}자</h3>
+   <div class="ans">${escBr(rec.essay)}</div>
+   ${memo?`<h3>선생님 피드백</h3><div class="ans">${escBr(memo)}</div>`:''}
+   ${ai?`<h3>AI 피드백 (참고용)</h3><div class="ans">${escBr(ai)}</div>`:''}
+   <div class="sign">본 결과표는 ${new Date().toLocaleDateString('ko-KR')} 기준 채점 결과입니다. &nbsp;&nbsp; 확인 ______________ (학생/보호자 서명)</div>`;
+}
+
+/* ── 교사 ── */
+let tpin='', aiReady=false, resultOpen=false;
+const T=s=>{const t=s.__teacher||{};return (+t.pred||0)+(+t.c1||0)+(+t.c2||0)+(+t.c3||0)+(+t.c4||0)};
+const A=s=>(+s.autoRead||0)+(+s.autoStage||0);
+async function tIn(){
+  const p=$('#tPin').value.trim(),e=$('#tErr');e.textContent='';
+  if(p.length<4){e.textContent='PIN을 4자리 이상 입력해 주세요.';return}
+  tpin=p;
+  try{const r=await api('roster',{code,pin:tpin});if(!r.ok)throw new Error(r.error||'들어갈 수 없습니다');
+    revealed=!!r.revealed;rows=r.rows||[];aiReady=!!r.aiReady;resultOpen=!!r.resultOpen;
+    const st=await api('state',{code});if(st.data)mergeData(st.data);
+    $('#tLogin').classList.add('hide');$('#tMain').classList.remove('hide');
+    $('#tCodeLbl').textContent='수업 코드 '+code;
+    $('#tConn').innerHTML=apiUrl?('Apps Script 연결됨<br><span class="muted">'+esc(apiUrl)+'</span>')
+      :'연결되지 않음 — 브라우저 임시 저장소로 동작 중입니다.';
+    buildSelects();paint();
+  }catch(err){e.textContent=err.message}
+}
+async function loadRows(){
+  try{const r=await api('roster',{code,pin:tpin});if(r.ok){rows=r.rows||[];revealed=!!r.revealed;aiReady=!!r.aiReady;resultOpen=!!r.resultOpen;paint()}}
+  catch(e){$('#tEmpty').textContent='불러오지 못했습니다 — '+e.message}
+}
+function paint(){
+  $('#tCount').textContent=`· ${rows.length}명 제출`;
+  $('#tState').textContent=revealed?'실제 추계가 공개된 상태입니다. 학생 화면에 문항 4가 열려 있습니다.'
+    :'아직 공개하지 않았습니다. 1차 제출을 모두 확인한 뒤 공개하세요.';
+  $('#bReveal').textContent=revealed?'공개 되돌리기':'실제 추계 공개';
+  const finalN=rows.filter(s=>s.final).length;
+  const gradedN=rows.filter(s=>s.final&&(s.__teacher&&['pred','c1','c2','c3','c4'].some(k=>s.__teacher[k]!==undefined&&s.__teacher[k]!==''))).length;
+  $('#bResult').textContent=resultOpen?'채점 결과 감추기':'채점 결과 공개';
+  $('#tResultState').textContent=resultOpen
+    ? '📢 채점 결과가 학생에게 공개된 상태입니다. 학생이 학번·응시 코드로 다시 들어오면 점수와 피드백을 봅니다.'
+    : (finalN?`채점 결과는 아직 감춰져 있습니다. (최종 제출 ${finalN}명 중 채점 완료 ${gradedN}명)`:'');
+  const tb=$('#tRows');tb.innerHTML='';
+  $('#tEmpty').textContent=rows.length?'':'아직 제출한 학생이 없습니다.';
+  rows.slice().sort((a,b)=>String(a.sid).localeCompare(String(b.sid))).forEach(s=>{
+    const t=s.__teacher||{},essay=(+t.c1||0)+(+t.c2||0)+(+t.c3||0)+(+t.c4||0);
+    const lv=(+s.leaves||0);
+    const lvCell=s.autoSubmitted?`<span class="tag t1">자동·${lv}</span>`:(lv?`<span class="tag t2">${lv}</span>`:'0');
+    tb.insertAdjacentHTML('beforeend',`<tr><td>${esc(s.sid)}</td><td>${esc(s.name)}</td>
+      <td>${(DATA[s.cty]||{}).flag||''} ${esc(s.countryName)}</td>
+      <td>${s.autoRead||0}</td><td>${s.autoStage||0}</td><td>${t.pred!==undefined&&t.pred!==''?t.pred:'–'}</td>
+      <td>${essay||'–'}</td><td><b>${A(s)+T(s)}</b></td><td>${lvCell}</td><td>${s.final?'✓':'–'}</td></tr>`)});
+  buildPick();renderDots();renderTags();renderGrid();
+}
+function buildSelects(){['#tCountry','#eCountry'].forEach(sel=>{const el=$(sel),k=el.value;el.innerHTML='';
+  ORDER.forEach(c=>el.insertAdjacentHTML('beforeend',`<option value="${c}">${DATA[c].flag} ${DATA[c].name}</option>`));
+  if(k)el.value=k})}
+function buildPick(){const el=$('#tPick'),k=el.value;el.innerHTML='<option value="">— 고르세요 —</option>';
+  rows.slice().sort((a,b)=>String(a.sid).localeCompare(String(b.sid)))
+    .forEach(s=>el.insertAdjacentHTML('beforeend',`<option value="${esc(s.sid)}">${esc(s.sid)} ${esc(s.name)}</option>`));
+  if(k)el.value=k;renderGrade()}
+function renderGrade(){
+  const sid=$('#tPick').value,box=$('#tGrade'),s=rows.find(x=>String(x.sid)===sid);
+  if(!s){box.innerHTML='<p class="tiny">학생을 고르면 답안과 채점란이 나타납니다.</p>';return}
+  const t=s.__teacher||{},d=DATA[s.cty]||DATA.kr,v=k=>t[k]!==undefined&&t[k]!==''?t[k]:'';
+  box.innerHTML=`
+   <div class="blk blk-s" style="background:var(--clay);box-shadow:var(--shadow-sm)">
+     <div class="cap"><i style="background:var(--ink-soft)"></i>자동 채점 (수정 불가)<em>${(s.autoRead||0)+(s.autoStage||0)} / 4점</em></div>
+     지표 <b>${s.autoRead||0}</b>/3 · 단계 <b>${s.autoStage||0}</b>/1
+     <div class="tiny" style="margin-top:4px">예측 방향 참고: ${s.pred?dirNote(s.pred,pct(d.now),pct(d.fut)):'–'}</div>
+   </div>
+   <div id="aiBox"></div>
+
+   <div class="q"><span class="pts">6점</span><b>문항 3</b> 2050년 인구 구조 예측</div>
+   <div class="blk blk-s">
+     <div class="cap"><i style="background:var(--pred)"></i>학생이 작성한 칸<em>읽기 전용 · ${(s.predReason||'').length}자</em></div>
+     <div class="scroll" style="margin-bottom:8px"><table><thead><tr><th></th>${BANDS.map(b=>`<th>${b}</th>`).join('')}</tr></thead>
+       <tbody><tr><td>예측</td>${(s.pred||[]).map(x=>`<td>${x.toFixed(1)}</td>`).join('')}</tr>
+       <tr><td class="muted">실제</td>${pct(d.fut).map(x=>`<td class="muted">${x.toFixed(1)}</td>`).join('')}</tr></tbody></table></div>
+     <div class="ro">${escBr(s.predReason)||'<span class="muted">미작성</span>'}</div>
+   </div>
+   <div class="blk blk-t">
+     <div class="cap"><i style="background:#E0A83C"></i>교사가 입력하는 칸</div>
+     <label for="gP">문항 3 점수 (0~6) — 코호트 이동 3 · 인구 변동 요인 2 · 작도 일치 1</label>
+     <input id="gP" inputmode="decimal" value="${v('pred')}">
+   </div>
+
+   <div class="q"><span class="pts">10점</span><b>문항 4</b> 인구 문제 진단과 해결 방안</div>
+   <div class="blk blk-s">
+     <div class="cap"><i style="background:var(--pred)"></i>학생이 작성한 칸<em>읽기 전용 · ${(s.essay||'').length}자</em></div>
+     <div class="ro" style="max-height:340px;overflow:auto">${escBr(s.essay)||'<span class="muted">미작성</span>'}</div>
+   </div>
+   <div class="blk blk-t">
+     <div class="cap"><i style="background:#E0A83C"></i>교사가 입력하는 칸</div>
+     <div class="row2">
+       <div><label for="gC1">① 지표 인용 (0~2)</label><input id="gC1" inputmode="decimal" value="${v('c1')}"></div>
+       <div><label for="gC2">② 문제 두 가지 (0~3)</label><input id="gC2" inputmode="decimal" value="${v('c2')}"></div>
+       <div><label for="gC3">③ 국가·사회 방안 (0~3)</label><input id="gC3" inputmode="decimal" value="${v('c3')}"></div>
+       <div><label for="gC4">④ 세대 간 정의 (0~2)</label><input id="gC4" inputmode="decimal" value="${v('c4')}"></div>
+     </div>
+     <label for="gM" style="margin-top:12px">채점 메모</label><input id="gM" value="${esc(s.__memo||'')}">
+     <div class="livesum"><span>자동 ${(s.autoRead||0)+(s.autoStage||0)} + 교사 <span id="gTea">0</span> =</span>
+       <span>총점 <b id="gTot">0</b> / 20점</span></div>
+   </div>
+
+   <div class="stack" style="margin-top:14px;justify-content:space-between">
+     <button class="ghost" id="gUnlock">제출 잠금 해제</button>
+     <button class="primary" id="gSave">채점 저장</button></div>
+   <p class="tiny" id="gMsg" style="text-align:right"></p>`;
+  const cap=(id,max)=>{const x=parseFloat($(id).value);return isNaN(x)?0:Math.max(0,Math.min(max,x))};
+  const FIELDS=[['#gP','pred'],['#gC1','c1'],['#gC2','c2'],['#gC3','c3'],['#gC4','c4']];
+  const LIMIT={'#gP':6,'#gC1':2,'#gC2':3,'#gC3':3,'#gC4':2};
+  function liveSum(){
+    const tea=FIELDS.reduce((n,[id])=>n+cap(id,LIMIT[id]),0);
+    $('#gTea').textContent=tea; $('#gTot').textContent=A(s)+tea;
   }
-  ui.alert('진단', out.join('\n'), ui.ButtonSet.OK);
-}
-
-/** 단위: 만 명. 통계청 장래인구추계·UN WPP 2024 공표 집계치에 맞춰 재구성한 값 */
-function DEFAULT_DATA(){return[
- ['kr','대한민국',2025,  548,  576,  638,  707,  783,  868,  650,  304,   94,0.75,4.8,7.0],
- ['kr','대한민국',2050,  377,  353,  411,  478,  557,  648,  719,  719,  454,1.08,'',''],
- ['de','독일',    2025, 1161,  935,  986, 1040, 1095, 1154,  930,  732,  317,1.38,8.1,12.1],
- ['de','독일',    2050, 1059,  890,  913,  937,  962,  987, 1009,  908,  605,1.45,'',''],
- ['fr','프랑스',  2025, 1132,  790,  797,  803,  810,  816,  726,  529,  257,1.62,9.9,9.5],
- ['fr','프랑스',  2050, 1051,  724,  741,  759,  777,  796,  812,  676,  444,1.65,'',''],
- ['gh','가나',    2025, 1239,  773,  538,  375,  261,  181,   90,   35,    8,3.50,22.9,7.1],
- ['gh','가나',    2050, 1326,  981,  806,  662,  545,  448,  209,   96,   27,2.60,'',''],
- ['ne','니제르',  2025, 1275,  617,  368,  219,  131,   78,   50,   18,    4,5.80,43.5,8.3],
- ['ne','니제르',  2050, 2436, 1512,  831,  459,  251,  138,  118,   45,   10,4.20,'',''],
- ['in','인도',    2025,35258,28863,23610,19314,15798,12923, 6531, 3160,  843,1.95,15.7,6.6],
- ['in','인도',    2050,29225,24035,23266,22520,21800,21103,13778, 8517, 2756,1.70,'','']
-]}
-
-/** 학번 끝 두 자리(번호)로 국가를 고르게 배정한다 */
-function autoCty_(sid){
-  const s=String(sid).trim();
-  const n=parseInt(s.slice(-2),10);
-  return ORDER[(isNaN(n)?0:n)%6];
-}
-
-function issueCodes(){
-  const sh=sr_(), v=sh.getDataRange().getValues(), used={};
-  for(let i=1;i<v.length;i++){ const c=String(v[i][3]).trim(); if(c) used[v[i][0]+'/'+c]=1; }
-  let made=0, dup=[];
-  const seen={};
-  for(let i=1;i<v.length;i++){
-    const sid=String(v[i][1]).trim(); if(!sid) continue;
-    const key=v[i][0]+'/'+sid;
-    if(seen[key]) dup.push(sid); else seen[key]=1;
-    if(!String(v[i][3]).trim()){
-      let c; do{ c=String(Math.floor(1000+Math.random()*9000)); } while(used[v[i][0]+'/'+c]);
-      used[v[i][0]+'/'+c]=1; sh.getRange(i+1,4).setValue(c); made++;
+  FIELDS.forEach(([id])=>$(id).addEventListener('input',liveSum));
+  liveSum();
+  function drawAi(){
+    const box2=$('#aiBox'),a=s.__ai;
+    if(!aiReady&&!a){box2.innerHTML='<p class="tiny">AI 채점 초안을 쓰려면 스프레드시트에서 「수행평가 → AI 채점 → API 키 등록」을 먼저 실행하세요.</p>';return}
+    const btn=`<button id="aiRun">${a?'AI 다시 채점':'AI 채점 초안 만들기'}</button>`;
+    if(!a){box2.innerHTML=`<div class="blk blk-a"><div class="cap"><i style="background:var(--teach)"></i>AI 채점 초안</div>
+      <div class="stack">${btn}<span class="tiny">답안 본문만 보내며 학번·이름은 전송하지 않습니다.</span></div></div>`}
+    else{
+      const tot=(+a.pred||0)+(+a.c1||0)+(+a.c2||0)+(+a.c3||0)+(+a.c4||0);
+      const scored=['pred','c1','c2','c3','c4'].some(k=>t[k]!==undefined&&t[k]!=='');
+      const gap=scored?Math.abs(tot-T(s)):null;
+      box2.innerHTML=`<div class="blk blk-a">
+        <div class="cap"><i style="background:var(--teach)"></i>AI 채점 초안 (참고용)<em>${tot} / 16점</em></div>
+        <span class="tag">확신 ${esc(a.confidence)||'–'}</span>
+        ${gap!==null&&gap>=3?`<span class="tag t2">교사 점수와 ${gap}점 차이</span>`:''}
+        <div style="margin-top:6px">문항3 <b>${a.pred}</b>/6 · ① <b>${a.c1}</b>/2 · ② <b>${a.c2}</b>/3 · ③ <b>${a.c3}</b>/3 · ④ <b>${a.c4}</b>/2</div>
+        <div class="tiny" style="margin-top:6px">${escBr(a.note)}</div>
+        <div class="stack" style="margin-top:10px">${btn}<button id="aiApply">노란 칸에 옮겨 담기</button></div>
+        <div class="tiny" style="margin-top:6px">초안일 뿐입니다. 노란 칸에서 확인·수정한 뒤 <b>채점 저장</b>을 눌러야 성적에 반영됩니다.</div></div>`;
+      $('#aiApply').onclick=()=>{FIELDS.forEach(([id,k])=>$(id).value=a[k]);liveSum();
+        $('#gMsg').style.color='var(--ink-soft)';$('#gMsg').textContent='초안을 교사 입력 칸에 옮겼습니다. 확인한 뒤 저장하세요.'};
     }
-    if(!String(v[i][4]).trim()) sh.getRange(i+1,5).setValue(autoCty_(sid));
+    const run=$('#aiRun'); if(!run)return;
+    run.onclick=async()=>{
+      if(!s.essay){alert('논술 답안이 아직 없습니다.');return}
+      run.disabled=true;run.textContent='채점 중… (10초쯤 걸립니다)';
+      try{const r=await api('aigrade',{code,pin:tpin,sid});if(!r.ok)throw new Error(r.error);
+        s.__ai=r.ai;drawAi();
+      }catch(err){run.disabled=false;run.textContent='AI 채점 초안 만들기';
+        $('#gMsg').style.color='#C9556F';$('#gMsg').textContent='AI 채점 실패 — '+err.message}
+    };
   }
-  SpreadsheetApp.getUi().alert(made+'명에게 응시 코드를 발급했습니다.\n'+
-    '배정 국가가 비어 있던 칸도 학번 끝 두 자리를 기준으로 채웠습니다.'+
-    (dup.length?'\n\n⚠ 학번이 중복됩니다: '+dup.join(', ')+'\n중복을 먼저 정리하세요.':''));
+  drawAi();
+  $('#gSave').onclick=async()=>{
+    const sc={pred:cap('#gP',6),c1:cap('#gC1',2),c2:cap('#gC2',3),c3:cap('#gC3',3),c4:cap('#gC4',2)};
+    const m=$('#gMsg');m.style.color='#C9556F';
+    try{const r=await api('score',{code,pin:tpin,sid,scores:sc,memo:$('#gM').value});if(!r.ok)throw new Error(r.error);
+      s.__teacher=sc;s.__memo=$('#gM').value;m.style.color='#209B95';
+      m.textContent='저장했습니다. 총점 '+(A(s)+T(s))+'점';
+      const k=$('#tPick').value;paint();$('#tPick').value=k;
+    }catch(e){m.textContent='저장 실패 — '+e.message}};
+  $('#gUnlock').onclick=async()=>{
+    if(!confirm('이 학생의 제출 잠금을 풀어 다시 쓸 수 있게 할까요?'))return;
+    try{const r=await api('unlock',{code,pin:tpin,sid});$('#gMsg').style.color=r.ok?'#209B95':'#C9556F';
+      $('#gMsg').textContent=r.ok?'잠금을 풀었습니다.':'실패 — '+(r.error||'')}
+    catch(e){$('#gMsg').textContent='실패 — '+e.message}};
+}
+function renderDots(){
+  const k=$('#tCountry').value||'kr',d=DATA[k];if(!d)return;
+  const fut=pct(d.fut),mine=rows.filter(s=>s.cty===k&&s.pred),box=$('#tDots');box.innerHTML='';
+  for(let i=8;i>=0;i--){
+    const v=mine.map(s=>s.pred[i]),mean=v.length?sum(v)/v.length:null;
+    const row=document.createElement('div');row.className='dotrow';
+    row.insertAdjacentHTML('beforeend',`<div class="plab">${BANDS[i]}</div>`);
+    const line=document.createElement('div');line.className='dotline';
+    const L=x=>Math.min(100,x/WID[i]*10/DENS*100);
+    v.forEach(x=>line.insertAdjacentHTML('beforeend',`<div class="dot" style="left:${L(x)}%"></div>`));
+    if(mean!==null)line.insertAdjacentHTML('beforeend',`<div class="mean" style="left:${L(mean)}%"></div>`);
+    line.insertAdjacentHTML('beforeend',`<div class="mark" style="left:${L(fut[i])}%"></div>`);
+    row.appendChild(line);row.insertAdjacentHTML('beforeend',`<div class="pval">${fut[i].toFixed(1)}%</div>`);
+    box.appendChild(row)}
+  if(!mine.length)box.insertAdjacentHTML('beforeend','<p class="tiny">이 국가를 맡은 제출자가 아직 없습니다.</p>');
+}
+function renderTags(){
+  const cnt={},list=[];
+  rows.forEach(s=>{const d=DATA[s.cty];if(!d||!s.pred)return;
+    const ts=tagsOf(s.pred,pct(d.now),pct(d.fut));ts.forEach(t=>cnt[t.t]=(cnt[t.t]||0)+1);list.push({s,ts})});
+  const tot=rows.length||1;
+  $('#tTagBox').innerHTML=Object.keys(cnt).length?Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([t,n])=>
+    `<div class="stack" style="justify-content:space-between;padding:7px 4px;border-bottom:1px solid var(--line)">
+      <span class="tag">${t}</span><span><b class="jua" style="font-size:18px">${n}</b>명 · ${Math.round(n/tot*100)}%</span></div>`).join('')
+    :'<p class="tiny">아직 집계할 제출물이 없습니다.</p>';
+  $('#tTagList').innerHTML=list.length?'<table><thead><tr><th>학생</th><th>태그</th></tr></thead><tbody>'+
+    list.map(({s,ts})=>`<tr><td>${esc(s.sid)} ${esc(s.name)}</td><td>${ts.map(t=>`<span class="tag ${t.c}">${t.t}</span>`).join('')}</td></tr>`).join('')+'</tbody></table>':'';
+}
+function renderGrid(){
+  const k=$('#eCountry').value||'kr',d=DATA[k];if(!d)return;
+  $('#eGrid').innerHTML='<div class="scroll"><table><thead><tr><th>계급</th>'+BANDS.map(b=>`<th>${b}</th>`).join('')+
+    '</tr></thead><tbody><tr><td>2025</td>'+d.now.map(v=>`<td>${v.toLocaleString()}</td>`).join('')+
+    '</tr><tr><td>2050</td>'+d.fut.map(v=>`<td>${v.toLocaleString()}</td>`).join('')+'</tr></tbody></table></div>';
+}
+function toCsv(){
+  const H=['학번','이름','국가','유소년층%','청장년층%','노년층%','총부양비','노령화지수','지표(3)',
+    '변천단계','단계(1)',...BANDS.map(b=>'예측_'+b),'문항3_근거','문항3(6)',
+    '문항4_논술','①지표(2)','②문제(3)','③방안(3)','④세대간정의(2)','문항4소계(10)','총점(20)','최종','채점메모','이탈횟수','자동제출'];
+  const R=rows.slice().sort((a,b)=>String(a.sid).localeCompare(String(b.sid))).map(s=>{
+    const t=s.__teacher||{},a=s.read||{},e4=(+t.c1||0)+(+t.c2||0)+(+t.c3||0)+(+t.c4||0);
+    return [s.sid,s.name,s.countryName,a.young,a.work,a.old,a.dep,a.age,s.autoRead,
+      s.stage,s.autoStage,...(s.pred||Array(9).fill('')),s.predReason,t.pred,
+      s.essay,t.c1,t.c2,t.c3,t.c4,e4,A(s)+T(s),s.final?'Y':'N',s.__memo||'',(+s.leaves||0),s.autoSubmitted?'Y':'']});
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const csv='\uFEFF'+[H,...R].map(r=>r.map(q).join(',')).join('\r\n');
+  const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=u;a.download=`인구서논술형_${code}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);
 }
 
-function makeHandout(){
-  const ss=SpreadsheetApp.getActiveSpreadsheet(), v=sr_().getDataRange().getValues();
-  let s=ss.getSheetByName('배부용'); if(s) ss.deleteSheet(s);
-  s=ss.insertSheet('배부용');
-  const out=[['학번','이름','응시 코드','배정 국가']];
-  for(let i=1;i<v.length;i++){ if(!String(v[i][1]).trim()) continue;
-    out.push([v[i][1],v[i][2],v[i][3],CNAME[String(v[i][4]).trim()]||'']); }
-  s.getRange(1,1,out.length,4).setValues(out);
-  s.getRange(1,1,1,4).setFontWeight('bold'); s.setFrozenRows(1); s.autoResizeColumns(1,4);
-  SpreadsheetApp.getUi().alert('「배부용」 시트를 만들었습니다.');
-}
+/* ── 사칙연산 계산기 ── */
+(function(){
+  const disp=$('#cDisp'), hist=$('#cHist'), panel=$('#calcPanel'), fab=$('#calcFab');
+  let expr='', log=[];
+  const show=()=>{ disp.textContent = expr || '0'; hist.textContent = log.slice(-3).reverse().join('   ·   '); };
 
-/** 잘라서 나눠 줄 응시 코드 쪽지를 만든다 */
-function makeSlips(){
-  const ss=ss_(), ui=SpreadsheetApp.getUi(), v=sr_().getDataRange().getValues(), list=[];
-  for(let i=1;i<v.length;i++){
-    const sid=String(v[i][1]).trim(); if(!sid) continue;
-    list.push({sid:sid, name:String(v[i][2]).trim(), pass:String(v[i][3]).trim(),
-               cty:CNAME[String(v[i][4]).trim()]||'', code:String(v[i][0]).trim()});
-  }
-  if(!list.length){ ui.alert('명렬표에 학생이 없습니다.'); return; }
-  let s=ss.getSheetByName('응시코드쪽지'); if(s) ss.deleteSheet(s);
-  s=ss.insertSheet('응시코드쪽지');
-  const COLS=3, rows=Math.ceil(list.length/COLS), out=[];
-  for(let r=0;r<rows;r++){
-    const line=[];
-    for(let c=0;c<COLS;c++){
-      const x=list[r*COLS+c];
-      line.push(x ? x.sid+'  '+x.name+'\n응시 코드   '+x.pass+'\n수업 코드   '+x.code+'\n배정 국가   '+x.cty : '');
+  /** 곱셈·나눗셈을 먼저 처리하는 작은 파서 (eval 을 쓰지 않는다) */
+  function calc(src){
+    const toks = src.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-')
+      .match(/(\d+\.?\d*|[+\-*/])/g);
+    if(!toks || !toks.length) return null;
+    const n=[], o=[];
+    for(const t of toks){
+      if('+-*/'.indexOf(t)>=0){ if(!n.length) return null; o.push(t); }
+      else n.push(parseFloat(t));
     }
-    out.push(line);
-  }
-  s.getRange(1,1,out.length,COLS).setValues(out)
-   .setWrap(true).setVerticalAlignment('middle').setFontSize(11)
-   .setBorder(true,true,true,true,true,true);
-  s.setColumnWidths(1,COLS,190);
-  for(let r=1;r<=out.length;r++) s.setRowHeight(r,76);
-  ui.alert('「응시코드쪽지」 시트를 만들었습니다.\n\n인쇄한 뒤 칸을 잘라 학생에게 나눠 주세요.\n※ 응시 코드가 적혀 있으니 화면에 띄우지 마세요.');
-}
-
-/** 실전 명단을 그대로 복사해 연습용 수업 코드를 만든다 (응시 코드는 동일) */
-function setupPractice(){
-  const ui=SpreadsheetApp.getUi();
-  const r=ui.prompt('연습용 수업 코드 만들기',
-    '실전 수업 코드를 입력하세요. (예: SOC5)\n\n같은 명단이 「코드+P」로 복사됩니다.\n응시 코드는 실전과 똑같으니 학생은 수업 코드만 바꿔 입력하면 됩니다.',
-    ui.ButtonSet.OK_CANCEL);
-  if(r.getSelectedButton()!==ui.Button.OK) return;
-  const base=r.getResponseText().trim().toUpperCase(); if(!base) return;
-  const p=base+'P';
-
-  const cfg=sc_(), cv=cfg.getDataRange().getValues();
-  let pin='', has=false;
-  for(let i=1;i<cv.length;i++){
-    if(String(cv[i][0]).trim()===base) pin=String(cv[i][1]).trim();
-    if(String(cv[i][0]).trim()===p) has=true;
-  }
-  if(!has) cfg.appendRow([p, pin||'1234', 'FALSE']);
-
-  const sh=sr_(), v=sh.getDataRange().getValues(), add=[], seen={};
-  for(let i=1;i<v.length;i++) if(String(v[i][0]).trim()===p) seen[String(v[i][1]).trim()]=1;
-  for(let i=1;i<v.length;i++){
-    if(String(v[i][0]).trim()!==base) continue;
-    const sid=String(v[i][1]).trim(); if(!sid||seen[sid]) continue;
-    add.push([p, sid, v[i][2], v[i][3], v[i][4], '']);
-  }
-  if(add.length) sh.getRange(sh.getLastRow()+1,1,add.length,6).setValues(add);
-  ui.alert('연습용 수업 코드 '+p+' 를 만들었습니다. ('+add.length+'명)\n\n'+
-    '학생에게는 수업 코드만 '+p+' 로 알려 주세요.\n학번과 응시 코드는 실전과 같습니다.\n\n'+
-    '연습이 끝나면 「연습 기록 지우기」로 정리하세요.');
-}
-
-/** 연습용 코드의 명렬표·제출·설정 행을 모두 지운다 */
-function clearPractice(){
-  const ui=SpreadsheetApp.getUi();
-  const r=ui.prompt('연습 기록 지우기','지울 연습용 수업 코드를 입력하세요. (예: SOC5P)',ui.ButtonSet.OK_CANCEL);
-  if(r.getSelectedButton()!==ui.Button.OK) return;
-  const p=r.getResponseText().trim().toUpperCase(); if(!p) return;
-  if(!/P$/.test(p)){ ui.alert('안전을 위해 P로 끝나는 연습용 코드만 지울 수 있습니다.'); return; }
-  if(ui.alert('확인', p+' 의 설정·명렬표·제출 기록을 모두 지웁니다.\n실전 코드는 건드리지 않습니다.\n\n계속할까요?',
-    ui.ButtonSet.OK_CANCEL)!==ui.Button.OK) return;
-  let n=0;
-  [sc_(), sr_(), ss_sub()].forEach(function(sh){
-    const v=sh.getDataRange().getValues();
-    for(let i=v.length-1;i>=1;i--){
-      if(String(v[i][0]).trim()===p || String(v[i][1]).trim()===p){ sh.deleteRow(i+1); n++; }
+    if(n.length!==o.length+1) return null;                 // 연산자가 남거나 모자람
+    for(let i=0;i<o.length;){                              // 1차: × ÷
+      if(o[i]==='*'||o[i]==='/'){
+        if(o[i]==='/'&&n[i+1]===0) return null;
+        n.splice(i,2, o[i]==='*'? n[i]*n[i+1] : n[i]/n[i+1]);
+        o.splice(i,1);
+      } else i++;
     }
-  });
-  ui.alert(n+'행을 지웠습니다.');
-}
+    let r=n[0];
+    for(let i=0;i<o.length;i++) r = o[i]==='+'? r+n[i+1] : r-n[i+1];
+    if(!isFinite(r)) return null;
+    return Math.round(r*1e8)/1e8;                          // 부동소수점 찌꺼기 정리
+  }
 
-function collectEssays(){
-  const ss=SpreadsheetApp.getActiveSpreadsheet(), v=ss_sub().getDataRange().getValues();
-  let s=ss.getSheetByName(S_ESSAY); if(s) ss.deleteSheet(s);
-  s=ss.insertSheet(S_ESSAY);
-  const out=[['학번','이름','국가','글자수','문항4 논술']];
-  for(let i=1;i<v.length;i++){ if(!String(v[i][2]).trim()) continue;
-    out.push([v[i][2],v[i][3],v[i][4],String(v[i][15]||'').length,v[i][15]]); }
-  s.getRange(1,1,out.length,5).setValues(out);
-  s.getRange(1,1,1,5).setFontWeight('bold');
-  s.getRange(2,5,Math.max(out.length-1,1),1).setWrap(true);
-  s.setColumnWidth(5,700); s.setFrozenRows(1);
-  SpreadsheetApp.getUi().alert('「논술답안」 시트를 만들었습니다.');
-}
+  function press(k){
+    if(k==='C'){ expr=''; }
+    else if(k==='back'){ expr=expr.slice(0,-1); }
+    else if(k==='='){
+      const r=calc(expr);
+      if(r===null){ disp.textContent='다시 입력'; return; }
+      log.push(expr+' = '+r);
+      expr=String(r);
+    }
+    else if('+−×÷'.indexOf(k)>=0){
+      if(!expr) return;                                    // 연산자로 시작하지 않게
+      if('+−×÷'.indexOf(expr.slice(-1))>=0) expr=expr.slice(0,-1);   // 연속 연산자는 교체
+      expr+=k;
+    }
+    else if(k==='.'){
+      const last=expr.split(/[+−×÷]/).pop();
+      if(last.indexOf('.')>=0) return;                     // 소수점 중복 방지
+      expr += (last===''? '0.' : '.');
+    }
+    else expr+=k;
+    show();
+  }
 
-/* ══════════ AI 채점 초안 ══════════
- * AI 점수는 교사 채점란(Q~U)에 절대 쓰지 않습니다. AB~AI 열에 초안으로만 남습니다.
- * API에는 학번·이름을 보내지 않습니다(답안 본문과 채점 기준만 전송).            */
+  $$('#calcPanel .cpad button').forEach(b=>b.onclick=()=>press(b.dataset.k));
 
-function setApiKey(){
-  const ui=SpreadsheetApp.getUi();
-  const r=ui.prompt('Anthropic API 키 등록',
-    'console.anthropic.com 에서 발급한 키를 붙여넣으세요.\n키는 이 스크립트 속성에만 저장되며 학생 화면에는 나타나지 않습니다.',
-    ui.ButtonSet.OK_CANCEL);
-  if(r.getSelectedButton()!==ui.Button.OK) return;
-  const k=r.getResponseText().trim();
-  if(k.indexOf('sk-ant-')!==0){ ui.alert('키 형식이 올바르지 않습니다. sk-ant- 로 시작해야 합니다.'); return; }
-  PropertiesService.getScriptProperties().setProperty('ANTHROPIC_API_KEY',k);
-  ui.alert('저장했습니다. 「연결 시험」으로 확인해 보세요.');
-}
-function apiKey_(){
-  const k=PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
-  if(!k) throw new Error('API 키가 등록되지 않았습니다. 「수행평가 → AI 채점 → API 키 등록」을 먼저 실행하세요.');
-  return k;
-}
-function testApi(){
-  try{ SpreadsheetApp.getUi().alert('연결에 성공했습니다.\n\n응답: '+callClaude_('한국어로 정확히 "연결 확인"이라고만 답하세요.',60)); }
-  catch(e){ SpreadsheetApp.getUi().alert('실패 — '+e.message); }
-}
-function callClaude_(prompt,maxTokens){
-  const res=UrlFetchApp.fetch('https://api.anthropic.com/v1/messages',{
-    method:'post', contentType:'application/json', muteHttpExceptions:true,
-    headers:{'x-api-key':apiKey_(),'anthropic-version':'2023-06-01'},
-    payload:JSON.stringify({model:AI_MODEL, max_tokens:maxTokens||1500, messages:[{role:'user',content:prompt}]})
-  });
-  const code=res.getResponseCode(), body=res.getContentText();
-  if(code!==200){ let m=body; try{ m=JSON.parse(body).error.message; }catch(e){} throw new Error('API 오류 '+code+' — '+m); }
-  const j=JSON.parse(body);
-  return (j.content||[]).filter(function(b){return b.type==='text'}).map(function(b){return b.text}).join('\n').trim();
-}
-
-function truth_(cty){
-  const d=data_()[cty]; if(!d||!d.now||!d.fut) return null;
-  const f=function(b){
-    const t=b.reduce(function(a,c){return a+c},0), p=b.map(function(v){return v/t*100});
-    const y=p[0], w=p[1]+p[2]+p[3]+p[4]+p[5], o=p[6]+p[7]+p[8];
-    return {tot:t, young:y, work:w, old:o, dep:(y+o)/w*100, age:o/y*100};
+  const toggle=on=>{
+    panel.classList.toggle('hide', !on);
+    fab.setAttribute('aria-expanded', on?'true':'false');
+    fab.textContent = on ? '계산기 닫기' : '계산기';
   };
-  return {name:d.name, now:f(d.now), fut:f(d.fut), tfr:d.tfr};
-}
-function n1(x){ return Math.round(x*10)/10; }
+  fab.onclick=()=>toggle(panel.classList.contains('hide'));
 
-function buildPrompt_(r){
-  const t=r.truth;
-  return [
-'당신은 고등학교 통합사회 교사의 서논술형 수행평가 채점을 돕고 있습니다.',
-'아래 채점 기준에 따라 학생 답안을 채점하고, 각 항목마다 답안에서 근거가 되는 부분을 짧게 인용하세요.',
-'후하게도 박하게도 채점하지 말고, 기준에 적힌 조건이 실제로 답안에 나타났는지만 보고 판단하세요.',
-'',
-'[배정 국가] '+t.name,
-'[2025년 실제값] 유소년층 '+n1(t.now.young)+'% · 청장년층 '+n1(t.now.work)+'% · 노년층 '+n1(t.now.old)+
-  '% · 총부양비 '+n1(t.now.dep)+' · 노령화지수 '+n1(t.now.age)+' · 합계출산율 '+t.tfr.now,
-'[2050년 실제값] 유소년층 '+n1(t.fut.young)+'% · 청장년층 '+n1(t.fut.work)+'% · 노년층 '+n1(t.fut.old)+
-  '% · 총부양비 '+n1(t.fut.dep)+' · 노령화지수 '+n1(t.fut.age)+' · 합계출산율 '+t.tfr.fut,
-'[학생이 그린 2050년 예측(0~14/15~24/25~34/35~44/45~54/55~64/65~74/75~84/85+, %)] '+r.pred,
-'',
-'━━ 문항 3 (6점) ━━',
-'과제: 2050년 인구 구조를 예측해 그리고 그 근거를 서술한다.',
-'채점 기준',
-'· 코호트 이동 (3점) — 2025년의 특정 연령 계급을 지목하고 2050년에 옮겨 갈 계급을 정확히 밝혔으면 3점,',
-'  이동을 언급했으나 계급 지목이 모호하면 2점, "고령화가 심해진다" 수준의 경향 진술이면 1점, 미작성 0점.',
-'· 인구 변동 요인 (2점) — 합계 출산율과 기대 수명을 모두 근거로 썼으면 2점, 하나만이면 1점, 없으면 0점.',
-'· 작도와 서술의 일치 (1점) — 서술한 내용이 위 예측값과 실제로 일치하면 1점, 어긋나면 0점.',
-'· 주의: 예측이 실제 추계와 가까운지는 채점하지 않는다.',
-'',
-'[학생 답안 · 문항 3]',
-r.q3||'(미작성)',
-'',
-'━━ 문항 4 (10점) ━━',
-'과제: 2050년 인구 문제를 진단하고 해결 방안을 제안하는 한 편의 글을 쓴다.',
-'채점 기준',
-'· ① 지표 인용 (2점) — 2025년과 2050년 지표를 각각 하나 이상 정확한 수치로 인용 2점,',
-'  한 시점만이거나 수치가 부정확하면 1점, 수치 인용이 없으면 0점.',
-'· ② 인구 문제 진단 (3점) — 문제 두 가지를 들고 각각을 총부양비·노령화지수·생산연령인구 등과',
-'  인과적으로 연결하며 영향받는 집단을 특정했으면 3점, 지표 연결이 하나뿐이거나 대상이 모호하면 2점,',
-'  한 가지만 제시하거나 교과 용어 없이 일반 서술이면 1점, 미작성 0점.',
-'· ③ 해결 방안 (3점) — 국가 차원과 사회·개인 차원을 각각 대상·방법까지 구체적으로 제시하고',
-'  배정 국가의 인구 구조 특성에 맞으면 3점, 두 차원을 제시했으나 구체성이 부족하면 2점,',
-'  한 차원만이거나 방향만 제시하면 1점, 미작성 0점.',
-'  ※ 니제르·가나·인도는 인구 과잉 대책(식량 증산, 산아 제한, 촌락 생활환경 개선, 중소도시 육성 등)이어야',
-'    국가 특성에 맞는 것으로 본다. 저출생 대책을 썼다면 이 항목에서 3점을 주지 않는다.',
-'· ④ 세대 간 정의 (2점) — 자신이 제안한 방안이 미래 세대에 남기는 부담을 구체적으로 지목하고',
-'  그럼에도 제안하는 이유나 완화책을 함께 밝혔으면 2점, 일반적 언급이면 1점, 없으면 0점.',
-'',
-'[학생 답안 · 문항 4]',
-r.q4||'(미작성)',
-'',
-'━━ 출력 형식 ━━',
-'다른 말 없이 아래 JSON만 출력하세요. 설명이나 코드블록 표시를 붙이지 마세요.',
-'{"q3":정수0-6,"q3_reason":"근거 인용과 판단 이유 두 문장 이내",',
-' "c1":정수0-2,"c2":정수0-3,"c3":정수0-3,"c4":정수0-2,',
-' "overall":"교사가 확인할 점을 두 문장 이내로",',
-' "confidence":"높음|보통|낮음"}',
-'판단이 애매하거나 답안이 짧아 근거가 부족하면 confidence를 "낮음"으로 하고 overall에 이유를 적으세요.'
-  ].join('\n');
-}
+  document.addEventListener('keydown', e=>{
+    if(panel.classList.contains('hide')) return;
+    const t=document.activeElement, tag=t?t.tagName:'';
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;   // 답안 입력 중에는 가로채지 않음
+    const map={'*':'×','/':'÷','-':'−','x':'×','X':'×'};
+    let k=null;
+    if(/^[0-9.]$/.test(e.key)) k=e.key;
+    else if(e.key in map) k=map[e.key];
+    else if(e.key==='+') k='+';
+    else if(e.key==='Enter'||e.key==='=') k='=';
+    else if(e.key==='Backspace') k='back';
+    else if(e.key==='Escape'){ toggle(false); e.preventDefault(); return; }
+    else if(e.key==='c'||e.key==='C') k='C';
+    if(!k) return;
+    e.preventDefault(); press(k);
+  });
 
-function aiGradeRow_(row){
-  const sh=ss_sub(), v=sh.getRange(row,1,1,HEAD.length).getValues()[0];
-  const cty=Object.keys(CNAME).filter(function(k){return CNAME[k]===String(v[4]).trim()})[0];
-  const t=truth_(cty||'kr');
-  if(!t) throw new Error('기준데이터에서 국가를 찾을 수 없습니다.');
-  const out=callClaude_(buildPrompt_({truth:t, pred:String(v[13]||''), q3:String(v[14]||''), q4:String(v[15]||'')}),1200);
-  let j;
-  try{ j=JSON.parse(out.replace(/^```(json)?/,'').replace(/```$/,'').trim()); }
-  catch(e){ throw new Error('응답을 해석하지 못했습니다: '+out.slice(0,120)); }
-  const cap=function(x,max){ const n=Number(x); return isNaN(n)?0:Math.max(0,Math.min(max,Math.round(n))); };
-  const s=[cap(j.q3,6),cap(j.c1,2),cap(j.c2,3),cap(j.c3,3),cap(j.c4,2)];
-  const note=String(j.q3_reason||'')+(j.overall?' / '+j.overall:'');
-  sh.getRange(row,C_AI,1,8).setValues([[s[0],s[1],s[2],s[3],s[4],note,String(j.confidence||''),new Date()]]);
-  return {pred:s[0],c1:s[1],c2:s[2],c3:s[3],c4:s[4],note:note,confidence:String(j.confidence||'')};
-}
-
-function aiGradeBatch(){
-  const ui=SpreadsheetApp.getUi(), v=ss_sub().getDataRange().getValues(), todo=[];
-  for(let i=1;i<v.length;i++){
-    if(String(v[i][C_FINAL-1]).toUpperCase()!=='Y') continue;
-    if(v[i][C_AI+6]) continue;
-    todo.push(i+1);
-  }
-  if(!todo.length){ ui.alert('채점할 답안이 없습니다.\n(최종 제출했고 아직 AI 초안이 없는 답안만 채점합니다.)'); return; }
-  const run=todo.slice(0,AI_BATCH);
-  if(ui.alert('AI 채점 초안',
-    '최종 제출한 답안 '+todo.length+'건 중 '+run.length+'건을 채점합니다.\n\n'+
-    'AI 점수는 교사 채점란에 들어가지 않고 별도 열에 초안으로만 남습니다.\n'+
-    '학번·이름은 전송하지 않고 답안 본문만 보냅니다.\n\n계속할까요?', ui.ButtonSet.OK_CANCEL)!==ui.Button.OK) return;
-  let done=0; const fail=[];
-  for(let i=0;i<run.length;i++){
-    try{ aiGradeRow_(run[i]); done++; Utilities.sleep(700); }
-    catch(e){ fail.push(run[i]+'행: '+e.message); }
-  }
-  ui.alert(done+'건을 채점했습니다.'+
-    (todo.length>run.length?'\n남은 '+(todo.length-run.length)+'건은 메뉴를 다시 실행하세요.':'')+
-    (fail.length?'\n\n실패\n'+fail.join('\n'):''));
-}
-
-function aiClear(){
-  const ui=SpreadsheetApp.getUi();
-  if(ui.alert('AI 초안 전부 지우기','AI 채점 초안 열(AB~AI)을 모두 비웁니다. 교사 채점란은 그대로 둡니다.\n계속할까요?',
-    ui.ButtonSet.OK_CANCEL)!==ui.Button.OK) return;
-  const sh=ss_sub(), n=sh.getLastRow()-1;
-  if(n>0) sh.getRange(2,C_AI,n,8).clearContent();
-  ui.alert('지웠습니다.');
-}
-
-/* ══════════ 라우팅 ══════════ */
-function doGet(e){ return route((e&&e.parameter)||{}); }
-function doPost(e){
-  let b={}; try{ b=JSON.parse(e.postData.contents); }catch(err){ b=(e&&e.parameter)||{}; }
-  return route(b);
-}
-function route(q){
-  try{
-    switch(q.action){
-      case 'state':   return J(aState(q));
-      case 'auth':    return J(aAuth(q));
-      case 'submit':  return J(aSubmit(q));
-      case 'roster':  return J(aRoster(q));
-      case 'reveal':  return J(aReveal(q));
-      case 'resultopen': return J(aResultOpen(q));
-      case 'result':  return J(aResult(q));
-      case 'score':   return J(aScore(q));
-      case 'unlock':  return J(aUnlock(q));
-      case 'aigrade': return J(aAiGrade(q));
-      case 'ping':    return J({ok:true,version:'4.1'});
-      default:        return J({ok:false,error:'알 수 없는 요청: '+q.action});
-    }
-  }catch(err){ return J({ok:false,error:String(err.message||err)}); }
-}
-function J(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-
-/* ══════════ 헬퍼 ══════════ */
-function need_(name){
-  const s=ss_().getSheetByName(name);
-  if(!s) throw new Error('「'+name+'」 시트가 없습니다. 「수행평가 → 1. 시트 만들기 · 점검」을 먼저 실행하세요.');
-  return s;
-}
-function sc_(){ return need_(S_CFG); }
-function sr_(){ return need_(S_ROSTER); }
-function ss_sub(){ return need_(S_SUB); }
-function sd_(){ return need_(S_DATA); }
-
-function cfg_(code){
-  const sh=sc_(), v=sh.getDataRange().getValues();
-  for(let i=1;i<v.length;i++) if(String(v[i][0]).trim()===String(code).trim())
-    return {row:i+1, pin:String(v[i][1]).trim(), revealed:String(v[i][2]).toUpperCase()==='TRUE',
-            resultOpen:String(v[i][3]).toUpperCase()==='TRUE'};
-  sh.appendRow([code,'','FALSE','FALSE']);
-  return {row:sh.getLastRow(), pin:'', revealed:false, resultOpen:false};
-}
-function pin_(code,pin){
-  const c=cfg_(code);
-  if(!c.pin){ sc_().getRange(c.row,2).setValue(String(pin)); return; }
-  if(c.pin!==String(pin).trim()) throw new Error('PIN이 맞지 않습니다.');
-}
-function data_(){
-  const v=sd_().getDataRange().getValues(), o={};
-  for(let i=1;i<v.length;i++){
-    const c=String(v[i][0]).trim(); if(!c) continue;
-    const k=Number(v[i][2])<=2030?'now':'fut';
-    o[c]=o[c]||{name:String(v[i][1]).trim(),now:null,fut:null,tfr:{}};
-    o[c][k]=v[i].slice(3,12).map(Number);
-    o[c].tfr[k]=Number(v[i][12]);
-    if(k==='now'){ if(v[i][13]!==''&&v[i][13]!=null) o[c].cbr=Number(v[i][13]);
-                   if(v[i][14]!==''&&v[i][14]!=null) o[c].cdr=Number(v[i][14]); }
-  }
-  return o;
-}
-function roster_(code,sid){
-  const v=sr_().getDataRange().getValues(), key=String(sid).trim();
-  for(let i=1;i<v.length;i++){
-    if(String(v[i][0]).trim()!==String(code).trim()) continue;
-    if(String(v[i][1]).trim()!==key) continue;
-    return {row:i+1, name:String(v[i][2]).trim(), pass:String(v[i][3]).trim(),
-            cty:String(v[i][4]).trim()||autoCty_(key),
-            locked:String(v[i][5]).toUpperCase()==='TRUE'};
-  }
-  return null;
-}
-function subRow_(code,sid){
-  const v=ss_sub().getDataRange().getValues(), key=String(sid).trim();
-  for(let i=1;i<v.length;i++)
-    if(String(v[i][1])===String(code)&&String(v[i][2]).trim()===key) return i+1;
-  return 0;
-}
-function mail_(){ try{ return Session.getActiveUser().getEmail()||''; }catch(e){ return ''; } }
-
-/* ══════════ 동작 ══════════ */
-function aState(q){ const c=cfg_(q.code); return {ok:true, revealed:c.revealed, resultOpen:c.resultOpen, data:data_()}; }
-
-function aAuth(q){
-  const r=roster_(q.code,q.sid);
-  if(!r) throw new Error('명렬표에 없는 학번입니다. 선생님께 확인하세요.');
-  if(!r.pass) throw new Error('응시 코드가 발급되지 않았습니다. 선생님께 말씀드리세요.');
-  if(r.pass!==String(q.pass).trim()) throw new Error('응시 코드가 맞지 않습니다.');
-  let record=null;
-  const row=subRow_(q.code,q.sid);
-  if(row){ try{ record=JSON.parse(ss_sub().getRange(row,C_JSON).getValue()); }catch(e){} }
-  if(record) record.locked=r.locked;
-  const c=cfg_(q.code);
-  const out={ok:true, name:r.name, cty:r.cty, locked:r.locked, record:record, resultOpen:c.resultOpen};
-  // 결과가 공개되었고 이 학생이 최종 제출했다면 채점 결과를 함께 실어 보낸다
-  if(c.resultOpen && row) out.result=resultOf_(row);
-  return out;
-}
-
-/** 한 학생의 제출 행에서 점수·채점메모·AI총평을 뽑아 학생에게 보여 줄 형태로 만든다 */
-function resultOf_(row){
-  const sh=ss_sub(), v=sh.getRange(row,1,1,HEAD.length).getValues()[0];
-  const t={pred:v[C_TEACHER-1],c1:v[C_TEACHER],c2:v[C_TEACHER+1],c3:v[C_TEACHER+2],c4:v[C_TEACHER+3]};
-  const num=x=>{ const n=Number(x); return isNaN(n)?0:n; };
-  return {
-    graded: String(v[C_FINAL-1]).toUpperCase()==='Y',
-    autoRead:num(v[C_READ-1]), autoStage:num(v[C_STAGE-1]),
-    q3:num(t.pred), c1:num(t.c1), c2:num(t.c2), c3:num(t.c3), c4:num(t.c4),
-    teacherTotal:num(v[C_TEA-1]), total:num(v[C_TOTAL-1]),
-    memo:String(v[C_MEMO-1]||''),
-    aiNote:String(v[C_AI+4]||'')   // AI_총평 (v는 0-index: AI_문항3=v[C_AI-1], AI_총평=v[C_AI+4])
+  /** 학생이 판독 단계 이후에 있을 때만 보이게 한다 */
+  window.calcVisible = on => {
+    fab.classList.toggle('hide', !on);
+    if(!on) toggle(false);
   };
-}
+  show();
+})();
 
-/** 학생이 결과 화면에서 새로고침할 때 쓰는 가벼운 조회 (인증 재확인) */
-function aResult(q){
-  const r=roster_(q.code,q.sid);
-  if(!r) throw new Error('명렬표에 없는 학번입니다.');
-  if(r.pass!==String(q.pass).trim()) throw new Error('응시 코드가 맞지 않습니다.');
-  const c=cfg_(q.code);
-  if(!c.resultOpen) return {ok:true, resultOpen:false};
-  const row=subRow_(q.code,q.sid);
-  if(!row) return {ok:true, resultOpen:true, result:null};
-  return {ok:true, resultOpen:true, result:resultOf_(row)};
-}
-
-function aSubmit(q){
-  const lock=LockService.getScriptLock(); lock.waitLock(20000);
+/* ── 연결 ── */
+buildStage();
+updateChrome();
+const clean=v=>(v||'SOC5').toUpperCase().replace(/[^0-9A-Z가-힣_-]/g,'');
+$('#bStudent').onclick=()=>{code=clean($('#gCode').value);show('scrStudent');step(1)};
+$('#bTeacher').onclick=openTeacher;
+$('#teacherFab').onclick=openTeacher;
+$('#bTBack').onclick=()=>{
+  if(returnView&&returnView.student){show('scrStudent');step(returnView.step);}
+  else show('scrGate');
+  returnView=null;
+};
+$('#bTHome')&&($('#bTHome').onclick=goHome);
+$('#bHome6')&&($('#bHome6').onclick=goHome);
+$('#bHome7')&&($('#bHome7').onclick=goHome);
+$('#bTIn').onclick=tIn;$('#tPin').addEventListener('keydown',e=>{if(e.key==='Enter')tIn()});
+$('#bAuth').onclick=async()=>{
+  const sid=$('#iSid').value.trim(),p=$('#iPass').value.trim(),e=$('#e1');e.textContent='';
+  if(!/^\d{4,6}$/.test(sid)){e.textContent='학번은 숫자로 입력하세요. (예: 10101)';return}
+  if(!p){e.textContent='응시 코드를 입력해 주세요.';return}
+  const b=$('#bAuth');b.disabled=true;b.textContent='확인 중…';
+  leaveCount=0;leaveLog=[];autoSubmitting=false;pendingLock=false;
   try{
-    const p=q.payload||{};
-    const r=roster_(q.code,p.sid);
-    if(!r) throw new Error('명렬표에 없는 학번입니다.');
-    if(r.pass!==String(p.pass).trim()) throw new Error('응시 코드가 맞지 않습니다.');
-    if(r.locked) throw new Error('이미 최종 제출되어 잠겨 있습니다. 선생님께 잠금 해제를 요청하세요.');
-    const rd=p.read||{};
-    const vals=[ new Date(), q.code, String(p.sid), r.name, p.countryName||CNAME[p.cty]||p.cty,
-      rd.young, rd.work, rd.old, rd.dep, rd.age, p.autoRead,
-      p.stage, p.autoStage, (p.pred||[]).join(', '), p.predReason||'', p.essay||'' ];
-    const sh=ss_sub();
-    let row=subRow_(q.code,p.sid);
-    if(!row){ sh.appendRow(vals); row=sh.getLastRow(); }
-    else { sh.getRange(row,1,1,vals.length).setValues([vals]); }   // 교사 채점란(Q~U)은 건드리지 않음
-    sh.getRange(row,C_FINAL).setValue(p.final?'Y':'N');
-    sh.getRange(row,C_MAIL).setValue(mail_());
-    sh.getRange(row,C_JSON).setValue(JSON.stringify(p));
-    if(p.final) sr_().getRange(r.row,R_LOCK).setValue('TRUE');
-    recalc_(row);
-    return {ok:true,row:row};
-  } finally { lock.releaseLock(); }
-}
-
-function recalc_(row){
-  const sh=ss_sub();
-  const t=sh.getRange(row,C_TEACHER,1,5).getValues()[0].map(function(x){ return Number(x)||0; });
-  const e4=t[1]+t[2]+t[3]+t[4];
-  const auto=(Number(sh.getRange(row,C_READ).getValue())||0)+(Number(sh.getRange(row,C_STAGE).getValue())||0);
-  sh.getRange(row,C_E4).setValue(e4);
-  sh.getRange(row,C_AUTO).setValue(auto);
-  sh.getRange(row,C_TEA).setValue(t[0]+e4);
-  sh.getRange(row,C_TOTAL).setValue(auto+t[0]+e4);
-}
-
-function aRoster(q){
-  pin_(q.code,q.pin);
-  const v=ss_sub().getDataRange().getValues(), out=[];
-  for(let i=1;i<v.length;i++){
-    if(String(v[i][1])!==String(q.code)) continue;
-    let rec={}; try{ rec=JSON.parse(v[i][C_JSON-1])||{}; }catch(e){}
-    rec.sid=String(v[i][2]).trim(); rec.name=v[i][3];
-    rec.__teacher={pred:v[i][C_TEACHER-1],c1:v[i][C_TEACHER],c2:v[i][C_TEACHER+1],
-                   c3:v[i][C_TEACHER+2],c4:v[i][C_TEACHER+3]};
-    rec.__memo=v[i][C_MEMO-1]; rec.__row=i+1;
-    if(v[i][C_AI+6]) rec.__ai={pred:v[i][C_AI-1],c1:v[i][C_AI],c2:v[i][C_AI+1],c3:v[i][C_AI+2],
-                               c4:v[i][C_AI+3],note:v[i][C_AI+4],confidence:v[i][C_AI+5]};
-    out.push(rec);
+    const st=await api('state',{code});if(st.data)mergeData(st.data);revealed=!!st.revealed;
+    const a=await api('auth',{code,sid,pass:p});
+    if(!a.ok)throw new Error(a.error||'응시 정보를 확인할 수 없습니다.');
+    me={sid,name:a.name,pass:p};cty=a.cty||autoCty(sid);
+    renderRead();
+    const r=a.record;
+    // 결과가 공개되었고 최종 제출한 학생이면 → 결과 조회 화면
+    if(a.resultOpen && r && r.final){rec=r;pred=r.pred.slice();stage=r.stage;
+      buildSheet();showResult(a.result);step(7);}
+    else if(r&&r.final){rec=r;pred=r.pred.slice();stage=r.stage;buildSheet();step(6)}
+    else if(r&&r.pred){rec=r;pred=r.pred.slice();stage=r.stage;
+      if(revealed)openEssay();else{drawPyr($('#pyrWait'),{values:pred,color:false});step(4);startPoll()}}
+    else step(2);
+  }catch(err){e.textContent=err.message}
+  b.disabled=false;b.textContent='확인';
+};
+$('#b2Next').onclick=()=>{const e=$('#e2');e.textContent='';
+  if(['#aYoung','#aWork','#aOld','#aDep','#aAge'].some(s=>num(s)===null)){e.textContent='문항 1의 다섯 칸을 모두 채워 주세요.';return}
+  if(stage===null){e.textContent='문항 2의 단계를 골라 주세요.';return}
+  if(!pred)pred=Array(9).fill(0);
+  renderPred();step(3)};
+$('#b3Back').onclick=()=>step(2);
+$('#bZero').onclick=()=>{pred=Array(9).fill(0);syncPred()};
+$('#bFlat').onclick=()=>{const t=sum(WID);pred=WID.map(w=>r1(w/t*100));normalizeTo100()};
+$('#bCopy').onclick=()=>{pred=pct(DATA[cty].now).map(r1);normalizeTo100()};
+$('#bNorm').onclick=normalizeTo100;
+$('#bSubmit').onclick=submit1;$('#bCheck').onclick=check;$('#bFinal').onclick=submitFinal;
+$('#bPrint').onclick=()=>window.print();
+$('#bPrintResult').onclick=()=>window.print();
+$('#aPredR').addEventListener('input',e=>$('#lenPred').textContent=e.target.value.trim().length);
+$('#aEssay').addEventListener('input',e=>{$('#lenEssay').textContent=e.target.value.trim().length;
+  clearTimeout(saveTimer);saveTimer=setTimeout(autoSave,4000)});
+$('#bRefresh').onclick=loadRows;
+$('#bReveal').onclick=async()=>{
+  if(!revealed&&!confirm('실제 추계를 공개할까요? 1차 제출을 모두 확인했는지 먼저 살펴보세요.'))return;
+  try{const r=await api('reveal',{code,pin:tpin,on:!revealed});if(!r.ok)throw new Error(r.error);
+    revealed=r.revealed;const k=$('#tPick').value;paint();$('#tPick').value=k;
+  }catch(e){alert('바꾸지 못했습니다 — '+e.message)}};
+$('#bResult').onclick=async()=>{
+  if(!resultOpen){
+    const finalN=rows.filter(s=>s.final).length;
+    const gradedN=rows.filter(s=>s.final&&s.__teacher&&['pred','c1','c2','c3','c4'].some(k=>s.__teacher[k]!==undefined&&s.__teacher[k]!=='')).length;
+    let msg='채점 결과를 학생에게 공개할까요?\n\n공개하면 학생이 학번·응시 코드로 다시 들어와 점수·정답·피드백을 봅니다.';
+    if(gradedN<finalN)msg+=`\n\n⚠ 최종 제출 ${finalN}명 중 ${gradedN}명만 채점되어 있습니다.\n아직 채점하지 않은 학생은 0점으로 보일 수 있습니다.`;
+    if(!confirm(msg))return;
   }
-  const c=cfg_(q.code);
-  return {ok:true, rows:out, revealed:c.revealed, resultOpen:c.resultOpen,
-          aiReady:!!PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY')};
-}
-
-function aReveal(q){
-  pin_(q.code,q.pin);
-  sc_().getRange(cfg_(q.code).row,3).setValue(q.on?'TRUE':'FALSE');
-  return {ok:true, revealed:!!q.on};
-}
-
-/** 채점 결과·피드백을 학생에게 공개/비공개 */
-function aResultOpen(q){
-  pin_(q.code,q.pin);
-  sc_().getRange(cfg_(q.code).row,4).setValue(q.on?'TRUE':'FALSE');
-  return {ok:true, resultOpen:!!q.on};
-}
-
-function aScore(q){
-  pin_(q.code,q.pin);
-  const row=subRow_(q.code,q.sid);
-  if(!row) return {ok:false,error:'해당 학생의 제출을 찾을 수 없습니다.'};
-  const x=q.scores||{};
-  ss_sub().getRange(row,C_TEACHER,1,5).setValues([[x.pred||0,x.c1||0,x.c2||0,x.c3||0,x.c4||0]]);
-  if(q.memo!==undefined) ss_sub().getRange(row,C_MEMO).setValue(q.memo);
-  recalc_(row);
-  return {ok:true, total:ss_sub().getRange(row,C_TOTAL).getValue()};
-}
-
-function aUnlock(q){
-  pin_(q.code,q.pin);
-  const r=roster_(q.code,q.sid);
-  if(!r) return {ok:false,error:'명렬표에서 찾을 수 없습니다.'};
-  sr_().getRange(r.row,R_LOCK).setValue('FALSE');
-  const row=subRow_(q.code,q.sid);
-  if(row) ss_sub().getRange(row,C_FINAL).setValue('N');
-  return {ok:true};
-}
-
-/** 대시보드에서 학생 한 명만 즉시 채점 */
-function aAiGrade(q){
-  pin_(q.code,q.pin);
-  const row=subRow_(q.code,q.sid);
-  if(!row) return {ok:false,error:'해당 학생의 제출을 찾을 수 없습니다.'};
-  return {ok:true, ai:aiGradeRow_(row)};
-}
+  try{const r=await api('resultopen',{code,pin:tpin,on:!resultOpen});if(!r.ok)throw new Error(r.error);
+    resultOpen=r.resultOpen;const k=$('#tPick').value;paint();$('#tPick').value=k;
+  }catch(e){alert('바꾸지 못했습니다 — '+e.message)}};
+$$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  ['t1','t2','t3','t4','t5'].forEach(t=>$('#'+t).classList.toggle('hide',t!==b.dataset.tab))});
+$('#tPick').onchange=renderGrade;$('#tCountry').onchange=renderDots;$('#eCountry').onchange=renderGrid;
+$('#bCsv').onclick=toCsv;
+</script>

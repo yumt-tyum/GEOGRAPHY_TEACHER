@@ -6,104 +6,149 @@
 <title>로컬 브랜딩 기획 · 한국지리</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#F1ECF7; --clay:#FAF6FF; --clay-2:#F3EDFB;
-  --ink:#463C5E; --ink-soft:#7A6E96;
-  --grape:#B4A2EC; --grape-deep:#8B72D6;
-  --mint:#8FD8C2; --peach:#F6B5A2; --lemon:#F7DE9A;
-  --line:#E2D8F2;
-  --up: 7px 7px 15px rgba(115,95,160,.16), -7px -7px 15px #ffffff;
-  --up-sm: 4px 4px 9px rgba(115,95,160,.14), -4px -4px 9px #ffffff;
-  --in: inset 5px 5px 10px rgba(115,95,160,.18), inset -5px -5px 10px #ffffff;
-  --r:22px;
+  /* ── 종이 위 지리 스크랩북 팔레트 ───────────────────── */
+  --paper:#F4ECD8;        /* 배경 크래프트지 */
+  --paper-2:#FBF6EA;      /* 카드용 밝은 종이 */
+  --kraft:#E2CFA5;        /* 진한 크래프트 (테이프·강조면) */
+  --ink:#4A3728;          /* 잉크색 글자 */
+  --ink-soft:#8A7660;     /* 흐린 잉크 */
+  --terracotta:#C1572E;   /* 우표 도장 색 · 주요 버튼 */
+  --map-blue:#3C6E8F;     /* 지도 바다색 */
+  --moss:#6B7F4F;         /* 숲 초록 */
+  --mustard:#D9A441;      /* 나침반 금색 */
+  --line:#C9B48C;         /* 테두리·점선 */
+  --r-card: 4px 16px 4px 16px;
 }
 *{box-sizing:border-box}
 body{
-  margin:0; padding:0 0 64px; background:var(--bg); color:var(--ink);
+  margin:0; padding:0 0 64px; color:var(--ink);
   font-family:'Gowun Dodum',system-ui,sans-serif; font-size:16px; line-height:1.75;
   -webkit-text-size-adjust:100%;
+  background-color:var(--paper);
+  background-image:
+    radial-gradient(rgba(74,55,40,.05) 1px, transparent 1px);
+  background-size: 14px 14px;
 }
-h1,h2,h3,.jua,button,.pill{font-family:'Jua',sans-serif; font-weight:400; letter-spacing:.01em}
+h1,h2,h3,.jua,button,.pill{font-family:'Gaegu',sans-serif; font-weight:700; letter-spacing:.01em}
 .wrap{max-width:680px; margin:0 auto; padding:20px 18px}
-header.top{padding:26px 18px 10px; max-width:680px; margin:0 auto}
+header.top{padding:30px 18px 12px; max-width:680px; margin:0 auto; position:relative}
 header.top .eyebrow{font-size:14px; color:var(--ink-soft)}
-header.top h1{margin:2px 0 0; font-size:26px; line-height:1.35}
+header.top h1{margin:4px 0 0; font-size:28px; line-height:1.4; color:var(--ink)}
+header.top::after{
+  content:'🧭'; position:absolute; top:22px; right:22px; font-size:30px;
+  transform:rotate(12deg);
+}
 
-.card{background:var(--clay); border-radius:var(--r); box-shadow:var(--up); padding:22px; margin:16px 0}
+.card{
+  background:var(--paper-2); border-radius:var(--r-card);
+  box-shadow:0 10px 22px rgba(74,55,40,.14), 0 1px 0 rgba(74,55,40,.06);
+  border:1px solid rgba(74,55,40,.09);
+  padding:22px; margin:18px 0; position:relative;
+}
 .card.tight{padding:16px 18px}
-.sunk{background:var(--clay-2); border-radius:18px; box-shadow:var(--in); padding:16px}
+.sunk{background:var(--paper); border-radius:4px 14px 4px 14px; box-shadow:inset 0 0 0 1.5px var(--line); padding:16px}
 
-label{display:block; font-family:'Jua',sans-serif; font-size:15.5px; margin:18px 0 7px}
-label .hint{font-family:'Gowun Dodum',sans-serif; font-size:13px; color:var(--ink-soft); margin-left:6px}
+/* 안내·완료·지역뽑기·랭킹 카드에는 washi tape 한 조각 */
+#s-gate .card::before, #s-draw .card::before, #s-done .card::before, #s-rank .card::before{
+  content:''; position:absolute; top:-13px; left:28px; width:64px; height:24px;
+  background:repeating-linear-gradient(45deg, var(--mustard), var(--mustard) 6px, rgba(255,255,255,.4) 6px, rgba(255,255,255,.4) 10px);
+  opacity:.9; transform:rotate(-4deg); box-shadow:0 2px 3px rgba(0,0,0,.15);
+}
+
+label{display:block; font-family:'Gaegu',sans-serif; font-weight:700; font-size:16.5px; margin:18px 0 7px; color:var(--ink)}
+label .hint{font-family:'Gowun Dodum',sans-serif; font-weight:400; font-size:13px; color:var(--ink-soft); margin-left:6px}
 input[type=text],input[type=number],textarea,select{
-  width:100%; border:none; outline:none; background:var(--clay-2);
-  border-radius:16px; box-shadow:var(--in); padding:13px 15px;
+  width:100%; border:1.5px solid var(--line); outline:none; background:var(--paper);
+  border-radius:4px 12px 4px 12px; padding:13px 15px;
   font-family:'Gowun Dodum',sans-serif; font-size:16px; color:var(--ink);
 }
 textarea{min-height:104px; resize:vertical; line-height:1.7}
-select{appearance:none; background-image:linear-gradient(45deg,transparent 50%,var(--grape-deep) 50%),linear-gradient(135deg,var(--grape-deep) 50%,transparent 50%);
+select{appearance:none; background-image:linear-gradient(45deg,transparent 50%,var(--map-blue) 50%),linear-gradient(135deg,var(--map-blue) 50%,transparent 50%);
   background-position:calc(100% - 20px) 22px, calc(100% - 14px) 22px; background-size:6px 6px,6px 6px; background-repeat:no-repeat; padding-right:40px}
-input:focus,textarea:focus,select:focus{box-shadow:var(--in),0 0 0 3px rgba(139,114,214,.32)}
+input:focus,textarea:focus,select:focus{border-color:var(--terracotta); box-shadow:0 0 0 3px rgba(193,87,46,.18)}
 
 button{
-  border:none; cursor:pointer; background:var(--clay); color:var(--ink);
-  border-radius:18px; box-shadow:var(--up-sm); padding:13px 20px; font-size:16.5px;
-  transition:box-shadow .12s ease, transform .12s ease;
+  border:2px solid var(--ink); cursor:pointer; background:var(--paper-2); color:var(--ink);
+  border-radius:4px 12px 4px 12px; padding:12px 20px; font-size:16.5px;
+  box-shadow:3px 3px 0 var(--ink);
+  transition:transform .1s ease, box-shadow .1s ease;
 }
-button:active{box-shadow:var(--in); transform:translateY(1px)}
-button:focus-visible{outline:3px solid var(--grape-deep); outline-offset:2px}
-button.primary{background:var(--grape); color:#fff; box-shadow:6px 6px 13px rgba(115,95,160,.28),-5px -5px 12px #fff}
-button.primary:active{box-shadow:inset 5px 5px 10px rgba(80,60,130,.35), inset -4px -4px 9px rgba(255,255,255,.35)}
-button.ghost{background:transparent; box-shadow:none; color:var(--ink-soft); text-decoration:underline; padding:8px 4px}
-button[disabled]{opacity:.45; cursor:not-allowed}
+button:active{box-shadow:1px 1px 0 var(--ink); transform:translate(2px,2px)}
+button:focus-visible{outline:3px solid var(--map-blue); outline-offset:2px}
+button.primary{background:var(--terracotta); color:#FBF6EA; border-color:var(--ink)}
+button.ghost{background:transparent; box-shadow:none; border:none; color:var(--ink-soft); text-decoration:underline; padding:8px 4px}
+button.ghost:active{transform:none}
+button[disabled]{opacity:.45; cursor:not-allowed; box-shadow:2px 2px 0 var(--ink)}
 .row{display:flex; gap:10px; flex-wrap:wrap}
 .row>*{flex:1}
 .right{display:flex; justify-content:space-between; gap:10px; margin-top:26px}
 
-.pill{display:inline-block; padding:6px 14px; border-radius:999px; background:var(--clay-2); box-shadow:var(--up-sm); font-size:14px; margin:0 6px 6px 0}
-.pill.mint{background:var(--mint); color:#1f4e42}
-.pill.peach{background:var(--peach); color:#6b3226}
-.pill.lemon{background:var(--lemon); color:#6d5416}
+/* 여권 도장 느낌의 알약 배지 */
+.pill{display:inline-block; padding:5px 14px; border-radius:999px; border:2px solid var(--ink);
+  background:transparent; color:var(--ink); font-size:14px; margin:0 6px 6px 0; transform:rotate(-2deg)}
+.pill.mint{border-color:var(--moss); color:var(--moss)}
+.pill.peach{border-color:var(--terracotta); color:var(--terracotta)}
+.pill.lemon{border-color:var(--mustard); color:#8a6a1f}
 
-.steps{display:flex; gap:8px; margin:6px 0 2px}
-.steps div{flex:1; height:9px; border-radius:999px; background:var(--clay-2); box-shadow:var(--in)}
-.steps div.on{background:var(--grape)}
+/* 진행 단계: 점선 경로 + 핀 */
+.steps{display:flex; gap:10px; margin:12px 0 4px}
+.steps div{flex:1; height:3px; align-self:center; position:relative;
+  background:repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 10px)}
+.steps div::after{content:''; position:absolute; right:-4px; top:50%; transform:translateY(-50%);
+  width:11px; height:11px; border-radius:50%; background:var(--paper-2); border:2px solid var(--line)}
+.steps div.on{background:repeating-linear-gradient(90deg, var(--terracotta) 0 6px, transparent 6px 10px)}
+.steps div.on::after{background:var(--terracotta); border-color:var(--terracotta)}
 
 .muted{color:var(--ink-soft); font-size:14.5px}
 .big{font-size:34px; line-height:1.3}
 .center{text-align:center}
 .counter{font-size:13px; color:var(--ink-soft); text-align:right; margin-top:5px}
-.counter.ok{color:#2f8a6d}
+.counter.ok{color:var(--moss)}
 
 #toast{
   position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(140%);
-  background:var(--ink); color:#fff; padding:13px 22px; border-radius:999px;
-  font-family:'Jua',sans-serif; font-size:15px; z-index:99; max-width:88vw; text-align:center;
+  background:var(--ink); color:var(--paper-2); padding:13px 22px; border-radius:4px 14px 4px 14px;
+  font-family:'Gaegu',sans-serif; font-weight:700; font-size:15px; z-index:99; max-width:88vw; text-align:center;
+  box-shadow:3px 3px 0 rgba(0,0,0,.2);
   transition:transform .28s cubic-bezier(.2,.9,.3,1.2);
 }
 #toast.show{transform:translateX(-50%) translateY(0)}
 
-.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px}
-.work{background:var(--clay); border-radius:20px; box-shadow:var(--up-sm); padding:10px; text-align:center; cursor:pointer}
-.work:active{box-shadow:var(--in)}
-.work img{width:100%; aspect-ratio:1; object-fit:contain; border-radius:14px; background:#fff}
-.work .no{font-family:'Jua',sans-serif; font-size:14px; margin-top:8px}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
+/* 갤러리 작품 = 폴라로이드 사진 */
+.work{background:#fff; border-radius:2px; box-shadow:0 8px 16px rgba(74,55,40,.2); padding:10px 10px 14px; text-align:center; cursor:pointer}
+.work:nth-child(odd){transform:rotate(-1.2deg)}
+.work:nth-child(even){transform:rotate(1.2deg)}
+.work:active{box-shadow:0 3px 6px rgba(74,55,40,.25)}
+.work img{width:100%; aspect-ratio:1; object-fit:contain; background:#fdfaf2}
+.work .no{font-family:'Gaegu',sans-serif; font-weight:700; font-size:14px; margin-top:8px}
 .work .sl{font-size:13px; color:var(--ink-soft); min-height:34px}
-.work.mine{outline:3px dashed var(--peach); outline-offset:-3px}
+.work.mine{outline:3px dashed var(--terracotta); outline-offset:-3px}
 
-#modal{position:fixed; inset:0; background:rgba(70,60,94,.55); display:none; align-items:center; justify-content:center; padding:18px; z-index:80}
+#modal{position:fixed; inset:0; background:rgba(74,55,40,.6); display:none; align-items:center; justify-content:center; padding:18px; z-index:80}
 #modal.show{display:flex}
-#modal .box{background:var(--clay); border-radius:26px; padding:22px; max-width:420px; width:100%; max-height:88vh; overflow:auto}
-#modal img{width:100%; border-radius:18px; background:#fff}
+#modal .box{background:var(--paper-2); border-radius:4px 20px 4px 20px; padding:22px; max-width:420px; width:100%; max-height:88vh; overflow:auto; box-shadow:6px 6px 0 rgba(74,55,40,.25)}
+#modal img{width:100%; border-radius:2px; background:#fff; padding:8px 8px 20px; box-shadow:0 6px 14px rgba(74,55,40,.2)}
 
-.drop{border-radius:18px; box-shadow:var(--in); background:var(--clay-2); padding:22px; text-align:center; cursor:pointer}
-.drop img{max-width:100%; max-height:230px; border-radius:14px; background:#fff}
+.drop{border-radius:4px 14px 4px 14px; border:2px dashed var(--line); background:var(--paper); padding:22px; text-align:center; cursor:pointer}
+.drop img{max-width:100%; max-height:230px; background:#fff; padding:8px 8px 20px; box-shadow:0 6px 14px rgba(74,55,40,.2)}
 .hidden{display:none !important}
-.assetbox,.refbox{background:var(--clay-2); border-radius:18px; box-shadow:var(--in); padding:14px 16px; margin:10px 0}
+.assetbox,.refbox{background:var(--paper); border:1.5px dashed var(--line); border-radius:4px 14px 4px 14px; padding:14px 16px; margin:10px 0}
 .assetbox label:first-child,.refbox label:first-child{margin-top:2px}
-.del{font-size:13px; color:#b25c48; background:none; box-shadow:none; padding:4px 0; text-decoration:underline}
+.del{font-size:13px; color:var(--terracotta); background:none; box-shadow:none; border:none; padding:4px 0; text-decoration:underline}
+.del:active{transform:none}
+
+/* 마감 오버레이: 여권 취소 도장 느낌 */
+#lockOverlay{position:fixed; inset:0; background:rgba(74,55,40,.72); backdrop-filter:blur(2px); z-index:90; display:none; align-items:center; justify-content:center; padding:24px}
+#lockOverlay.show{display:flex}
+#lockOverlay .box{background:var(--paper-2); color:var(--ink); border-radius:4px 18px 4px 18px; padding:30px 26px; text-align:center; max-width:340px;
+  border:4px double var(--terracotta); box-shadow:6px 6px 0 rgba(0,0,0,.2); transform:rotate(-2deg)}
+#lockOverlay .box p.jua{font-size:21px; margin:10px 0 4px; color:var(--terracotta)}
+#lockOverlay .lock-icon{font-size:38px}
+
 @media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
@@ -164,69 +209,64 @@ button[disabled]{opacity:.45; cursor:not-allowed}
     <textarea id="formation" placeholder="기후·지형·하천·입지·역사 중 무엇이 이 자산을 만들었는지 이어서 설명해 보세요."></textarea>
     <div class="counter" id="c-formation">0자</div>
 
-    <label>④ 참고 자료<span class="hint">최소 2개</span></label>
+    <label>④ 참고 자료<span class="hint">최소 1개</span></label>
     <div id="refs"></div>
     <button onclick="addRef()">＋ 자료 추가</button>
-
-    <label>⑤ AI가 알려준 내용 중 내가 직접 확인하거나 고친 부분</label>
-    <textarea id="aiVerify" placeholder="예: AI가 '조선시대부터'라고 했는데 보성군청 자료를 보니 1939년부터였다."></textarea>
 
     <div class="right"><span></span><button class="primary" onclick="go(2)">다음</button></div>
   </div>
 
   <!-- Step 2 -->
   <div class="card step hidden" id="step2">
-    <label>⑥ 슬로건<span class="hint">지리적 특성이 드러나게 한 줄</span></label>
+    <label>⑤ 슬로건<span class="hint">지리적 특성이 드러나게 한 줄</span></label>
     <input id="slogan" type="text" placeholder="예: 안개가 키운 초록, 보성">
 
-    <label>⑦ 키링 도안 이미지<span class="hint">5MB 이하</span></label>
+    <label>⑥ 키링 도안 이미지</label>
     <div class="drop" id="drop" onclick="document.getElementById('file').click()">
       <span id="drop-text" class="jua">눌러서 이미지 올리기</span>
       <img id="preview" class="hidden" alt="올린 도안 미리보기">
     </div>
     <input id="file" type="file" accept="image/*" class="hidden" onchange="pickImage(event)">
+    <p class="muted" id="imgStatus" style="margin-top:6px"></p>
 
-    <label>⑧ 이 도안에 담은 지리적 특성</label>
+    <label>⑦ 이 도안에 담은 지리적 특성</label>
     <textarea id="designDesc" placeholder="색·모양·요소가 이 지역의 무엇을 나타내는지 설명해 주세요."></textarea>
 
-    <label>⑨ 사용한 AI 도구</label>
+    <label>⑧ 사용한 AI 도구</label>
     <select id="aiTool">
       <option value="">선택하세요</option>
       <option>ChatGPT</option><option>Canva</option><option>미리캔버스</option><option>Midjourney</option><option>기타</option>
     </select>
 
-    <label>⑩ AI에 넣은 프롬프트 원문</label>
+    <label>⑨ AI에 넣은 프롬프트 원문</label>
     <textarea id="prompt" placeholder="쓴 그대로 붙여넣기"></textarea>
 
-    <label>⑪ 처음 결과물을 어떻게 고쳤나요?</label>
+    <label>⑩ 처음 결과물을 어떻게 고쳤나요?</label>
     <textarea id="revision" placeholder="예: 찻잎이 너무 사실적이어서 단순한 도형으로 바꿔달라고 다시 요청했다."></textarea>
 
-    <label>⑫ 이 키링을 살 사람은 누구인가요?</label>
+    <label>⑪ 이 키링을 살 사람은 누구인가요?</label>
     <input id="target" type="text" placeholder="예: 녹차밭 사진 찍으러 오는 20대 여행객">
-
-    <label>⑬ 왜 그 사람들인가요?<span class="hint">지역과의 연관성</span></label>
-    <textarea id="targetReason"></textarea>
 
     <div class="right"><button onclick="go(1)">이전</button><button class="primary" onclick="go(3)">다음</button></div>
   </div>
 
   <!-- Step 3 -->
   <div class="card step hidden" id="step3">
-    <label>⑭ 이 키링을 어디에서 팔거나 나눠 줄 건가요?</label>
+    <label>⑫ 이 키링을 어디에서 팔거나 나눠 줄 건가요?</label>
     <input id="place" type="text" placeholder="예: 보성 녹차밭 입구 매표소, 벌교역 관광안내소">
 
-    <label>⑮ 어떤 방식으로 전달할 건가요?</label>
+    <label>⑬ 어떤 방식으로 전달할 건가요?</label>
     <input id="method" type="text" placeholder="예: 입장권 구매 시 세트 판매, SNS 인증 시 증정">
 
-    <label>⑯ 얼마에 팔고, 왜 그 가격인가요?</label>
+    <label>⑭ 얼마에 팔고, 왜 그 가격인가요?</label>
     <textarea id="price" placeholder="제작 원가, 비슷한 굿즈 가격, 살 사람의 지불 의사를 함께 생각해 보세요."></textarea>
 
-    <label>⑰ 지역 변화 ❶</label>
+    <label>⑮ 지역 변화 ❶</label>
     <select id="change1Key" onchange="syncChange()"><option value="">관점을 고르세요</option></select>
     <p class="muted" id="q1" style="margin:8px 0"></p>
     <textarea id="change1"></textarea>
 
-    <label>⑱ 지역 변화 ❷<span class="hint">❶과 다른 관점</span></label>
+    <label>⑯ 지역 변화 ❷<span class="hint">❶과 다른 관점</span></label>
     <select id="change2Key" onchange="syncChange()"><option value="">관점을 고르세요</option></select>
     <p class="muted" id="q2" style="margin:8px 0"></p>
     <textarea id="change2"></textarea>
@@ -263,6 +303,16 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 </section>
 
 <div id="modal" onclick="closeModal(event)"><div class="box" id="modal-box"></div></div>
+
+<!-- 반이 잠겼을 때 뜨는 마감 오버레이 -->
+<div id="lockOverlay">
+  <div class="box">
+    <div class="lock-icon">🔒</div>
+    <p class="jua">제출이 마감되었습니다</p>
+    <p style="margin:0">더 이상 내용을 고칠 수 없어요.<br>선생님 안내를 기다려 주세요.</p>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -276,7 +326,7 @@ const CHANGES = {
   structure:{label:'공간 구조 변화', q:'브랜딩이 오래 성공한다면 토지 이용·상업지역·교통 같은 공간 구조는 어떻게 달라질까요?'}
 };
 
-let ME=null, PHASE='ready', IMG=null, IMG_MIME=null, CUR=1;
+let ME=null, PHASE='ready', IMG=null, IMG_MIME=null, CUR=1, POLL=null;
 
 /* --- 통신 --- */
 async function api(action, payload={}){
@@ -309,15 +359,36 @@ async function doLogin(){
     PHASE=r.phase;
     sessionStorage.setItem('sid',sid);
     routePhase();
+    startPolling();
   }catch(e){ toast(e.message); }
+}
+
+/* 제출 화면이 떠 있는 동안 30초마다 내 반 단계를 확인해서, 선생님이 잠그면 즉시 화면을 덮는다 */
+function startPolling(){
+  clearInterval(POLL);
+  POLL=setInterval(async ()=>{
+    if(!ME) return;
+    try{
+      const r=await api('getConfig',{sid:ME.sid});
+      PHASE=r.phase;
+      const onFormScreens = !document.getElementById('s-form').classList.contains('hidden')
+                          || !document.getElementById('s-draw').classList.contains('hidden');
+      document.getElementById('lockOverlay').classList.toggle('show', PHASE==='locked' && onFormScreens);
+    }catch(e){}
+  },30000);
 }
 
 function routePhase(){
   document.getElementById('f-who').textContent = ME.klass+'반 '+ME.name;
+  document.getElementById('lockOverlay').classList.remove('show');
   if(PHASE==='submit'){
     if(!ME.region){ document.getElementById('draw-hello').textContent=ME.name+'님, 반가워요'; return show('s-draw'); }
     if(ME.submitted) return showDone();
     return goForm();
+  }
+  if(PHASE==='locked'){
+    if(ME.submitted) return showDone();
+    return gate('제출이 마감되었어요', '기획서를 내지 못했다면 선생님께 알려주세요.');
   }
   if(PHASE==='vote') return loadGallery();
   if(PHASE==='result') return loadRanking();
@@ -345,7 +416,7 @@ async function drawRegion(){
 /* --- 폼 --- */
 async function goForm(){
   document.getElementById('f-region').textContent=ME.region;
-  if(!document.getElementById('assets').children.length){ addAsset(); addRef(); addRef(); fillChangeSelects(); }
+  if(!document.getElementById('assets').children.length){ addAsset(); addRef(); fillChangeSelects(); }
   try{
     const r=await api('getSubmission',{sid:ME.sid});
     if(r.data) fillForm(r.data);
@@ -395,7 +466,7 @@ function addRef(v){
       <option value="">선택하세요</option>
       <option>정부·공공기관</option><option>학술자료</option><option>언론보도</option><option>지자체</option><option>기타</option>
     </select>
-    ${i>2?'<button class="del" onclick="this.parentNode.remove()">이 자료 지우기</button>':''}`;
+    ${i>1?'<button class="del" onclick="this.parentNode.remove()">이 자료 지우기</button>':''}`;
   box.appendChild(d);
   if(v){ d.querySelector('.r-title').value=v.title||''; d.querySelector('.r-url').value=v.url||''; d.querySelector('.r-kind').value=v.kind||''; }
 }
@@ -418,24 +489,38 @@ function syncChange(){
   if(a && a===b){ document.getElementById('change2Key').value=''; document.getElementById('q2').textContent=''; toast('❶과 다른 관점을 골라 주세요.'); }
 }
 
-/* --- 이미지 (1200px로 줄여서 업로드) --- */
+/* --- 이미지: 긴 변 1400px로 줄이고, 그래도 크면 JPEG 압축을 단계적으로 낮춰 3MB 아래로 --- */
 function pickImage(ev){
   const f=ev.target.files[0]; if(!f) return;
-  if(f.size>5*1024*1024) return toast('5MB보다 작은 이미지로 올려 주세요.');
+  const status=document.getElementById('imgStatus');
+  status.textContent='이미지 준비 중…';
   const r=new FileReader();
   r.onload=()=>{
     const img=new Image();
     img.onload=()=>{
-      const max=1200, sc=Math.min(1, max/Math.max(img.width,img.height));
+      const max=1400, sc=Math.min(1, max/Math.max(img.width,img.height));
       const c=document.createElement('canvas');
       c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
       c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      const url=c.toDataURL('image/png');
-      IMG=url.split(',')[1]; IMG_MIME='image/png';
+
+      function tryEncode(quality, format){
+        return c.toDataURL(format, quality);
+      }
+      let url=tryEncode(0.92,'image/jpeg');
+      let bytes=Math.round(url.length*0.75);
+      let q=0.92;
+      while(bytes>3*1024*1024 && q>0.4){
+        q-=0.12;
+        url=tryEncode(q,'image/jpeg');
+        bytes=Math.round(url.length*0.75);
+      }
+      IMG=url.split(',')[1]; IMG_MIME='image/jpeg';
       const p=document.getElementById('preview');
       p.src=url; p.classList.remove('hidden');
       document.getElementById('drop-text').textContent='다른 이미지로 바꾸기';
+      status.textContent=`올릴 준비 완료 (약 ${(bytes/1024/1024).toFixed(1)}MB)`;
     };
+    img.onerror=()=>{ status.textContent=''; toast('이미지를 읽지 못했어요. 다른 파일로 시도해 주세요.'); };
     img.src=r.result;
   };
   r.readAsDataURL(f);
@@ -450,9 +535,9 @@ function collect(){
   })).filter(r=>r.title);
   const v=id=>document.getElementById(id).value.trim();
   return {
-    assetName:v('assetName'), assets, formation:v('formation'), refs, aiVerify:v('aiVerify'),
+    assetName:v('assetName'), assets, formation:v('formation'), refs,
     slogan:v('slogan'), designDesc:v('designDesc'), aiTool:v('aiTool'), prompt:v('prompt'),
-    revision:v('revision'), target:v('target'), targetReason:v('targetReason'),
+    revision:v('revision'), target:v('target'),
     place:v('place'), method:v('method'), price:v('price'),
     change1Key:v('change1Key'), change1:v('change1'), change2Key:v('change2Key'), change2:v('change2')
   };
@@ -460,19 +545,20 @@ function collect(){
 
 function fillForm(d){
   const set=(id,val)=>{ if(document.getElementById(id)) document.getElementById(id).value=val||''; };
-  set('assetName',d.assetName); set('formation',d.formation); set('aiVerify',d.aiVerify);
+  set('assetName',d.assetName); set('formation',d.formation);
   set('slogan',d.slogan); set('designDesc',d.designDesc); set('aiTool',d.aiTool);
-  set('prompt',d.prompt); set('revision',d.revision); set('target',d.target); set('targetReason',d.targetReason);
+  set('prompt',d.prompt); set('revision',d.revision); set('target',d.target);
   set('place',d.place); set('method',d.method); set('price',d.price);
   const key=lbl=>Object.keys(CHANGES).find(k=>CHANGES[k].label===lbl)||'';
   set('change1Key',key(d.change1Key)); set('change1',d.change1);
   set('change2Key',key(d.change2Key)); set('change2',d.change2);
   syncChange();
   document.getElementById('assets').innerHTML=''; (d.assets||[]).forEach(a=>addAsset(a)); if(!d.assets||!d.assets.length) addAsset();
-  document.getElementById('refs').innerHTML=''; (d.refs||[]).forEach(r=>addRef(r)); while(document.getElementById('refs').children.length<2) addRef();
+  document.getElementById('refs').innerHTML=''; (d.refs||[]).forEach(r=>addRef(r)); if(!document.getElementById('refs').children.length) addRef();
   if(d.imageUrl){
     const p=document.getElementById('preview'); p.src=d.imageUrl; p.classList.remove('hidden');
     document.getElementById('drop-text').textContent='다른 이미지로 바꾸기';
+    document.getElementById('imgStatus').textContent='이미 올라간 도안이 있어요';
     IMG=null;
   }
   ME.saved=d;
@@ -485,7 +571,7 @@ async function submitAll(){
               ['target','타겟'],['place','판매·배포 장소'],['method','판매·배포 방식'],['price','예상 가격']];
   for(const [k,ko] of need) if(!d[k]) return toast(ko+' 칸이 비어 있어요.');
   if(!d.assets.length || d.assets.some(a=>!a.geo)) return toast('자산 유형마다 지리적 요인을 써 주세요.');
-  if(d.refs.length<2) return toast('참고 자료를 2개 이상 넣어 주세요.');
+  if(d.refs.length<1) return toast('참고 자료를 1개 이상 넣어 주세요.');
   if(!d.change1Key || !d.change2Key) return toast('지역 변화 관점을 2개 골라 주세요.');
   if(!d.change1 || !d.change2) return toast('고른 관점에 대한 서술을 채워 주세요.');
   if(!IMG && !(ME.saved && ME.saved.imageFileId)) return toast('키링 도안 이미지를 올려 주세요.');

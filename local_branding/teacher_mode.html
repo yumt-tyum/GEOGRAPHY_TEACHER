@@ -5,46 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>교사 패널 · 로컬 브랜딩 수행평가</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EFEAF6; --clay:#FAF6FF; --clay-2:#F2ECFA; --ink:#463C5E; --ink-soft:#7A6E96;
-  --grape:#B4A2EC; --grape-deep:#8B72D6; --mint:#8FD8C2; --peach:#F6B5A2; --lemon:#F7DE9A;
-  --up:6px 6px 13px rgba(115,95,160,.16),-6px -6px 13px #fff;
-  --up-sm:3px 3px 7px rgba(115,95,160,.14),-3px -3px 7px #fff;
-  --in:inset 5px 5px 10px rgba(115,95,160,.18),inset -5px -5px 10px #fff;
+  --paper:#F4ECD8; --paper-2:#FBF6EA; --kraft:#E2CFA5;
+  --ink:#4A3728; --ink-soft:#8A7660;
+  --terracotta:#C1572E; --map-blue:#3C6E8F; --moss:#6B7F4F; --mustard:#D9A441;
+  --line:#C9B48C;
 }
 *{box-sizing:border-box}
-body{margin:0;padding:0 0 60px;background:var(--bg);color:var(--ink);font-family:'Gowun Dodum',sans-serif;line-height:1.7}
-h1,h2,h3,button,.jua,th{font-family:'Jua',sans-serif;font-weight:400}
+body{margin:0;padding:0 0 60px;background:var(--paper);color:var(--ink);font-family:'Gowun Dodum',sans-serif;line-height:1.7}
+h1,h2,h3,button,.jua,th{font-family:'Gaegu',sans-serif;font-weight:700}
 .wrap{max-width:1080px;margin:0 auto;padding:20px 16px}
-.card{background:var(--clay);border-radius:20px;box-shadow:var(--up);padding:20px;margin:14px 0}
-input,select,textarea{border:none;outline:none;background:var(--clay-2);border-radius:14px;box-shadow:var(--in);padding:11px 14px;font-family:inherit;font-size:15px;color:var(--ink);width:100%}
-button{border:none;cursor:pointer;background:var(--clay);color:var(--ink);border-radius:14px;box-shadow:var(--up-sm);padding:10px 16px;font-size:15px;transition:box-shadow .12s,transform .12s}
-button:active{box-shadow:var(--in);transform:translateY(1px)}
-button.primary{background:var(--grape);color:#fff}
-button.on{background:var(--mint);color:#1f4e42}
+.card{background:var(--paper-2);border-radius:4px 16px 4px 16px;border:1px solid rgba(74,55,40,.09);
+  box-shadow:0 8px 18px rgba(74,55,40,.12);padding:20px;margin:14px 0}
+input,select,textarea{border:1.5px solid var(--line);outline:none;background:var(--paper);border-radius:4px 10px 4px 10px;
+  padding:11px 14px;font-family:inherit;font-size:15px;color:var(--ink);width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--terracotta); box-shadow:0 0 0 3px rgba(193,87,46,.16)}
+button{border:2px solid var(--ink);cursor:pointer;background:var(--paper-2);color:var(--ink);
+  border-radius:4px 10px 4px 10px;padding:9px 16px;font-size:15px;
+  box-shadow:2px 2px 0 var(--ink); transition:box-shadow .1s,transform .1s}
+button:active{box-shadow:0 0 0 var(--ink);transform:translate(2px,2px)}
+button.primary{background:var(--terracotta);color:#FBF6EA;border-color:var(--ink)}
+button.on{background:var(--moss);color:#FBF6EA;border-color:var(--ink)}
+button.warn.on{background:var(--terracotta);color:#FBF6EA;border-color:var(--ink)}
 button[disabled]{opacity:.45;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .muted{color:var(--ink-soft);font-size:14px}
 table{width:100%;border-collapse:collapse;font-size:14.5px}
-th,td{padding:9px 8px;text-align:left;border-bottom:1px solid #E4DCF2}
-th{color:var(--ink-soft);font-size:13.5px}
-tr.clickable:hover{background:var(--clay-2);cursor:pointer}
-.tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12.5px;background:var(--clay-2);box-shadow:var(--up-sm)}
-.tag.done{background:var(--mint);color:#1f4e42}
-.tag.ai{background:var(--lemon);color:#6d5416}
-.tag.none{background:var(--peach);color:#6b3226}
+th,td{padding:9px 8px;text-align:left;border-bottom:1.5px dashed var(--line)}
+th{color:var(--ink-soft);font-size:13.5px;font-weight:700}
+tr.clickable:hover{background:var(--paper);cursor:pointer}
+.tag{display:inline-block;padding:2px 12px;border-radius:999px;font-size:12.5px;border:1.5px solid currentColor}
+.tag.done{color:var(--moss)}
+.tag.ai{color:#8a6a1f}
+.tag.none{color:var(--terracotta)}
 .hidden{display:none !important}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:820px){.split{grid-template-columns:1fr}}
 .scorebox{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.scorebox label{font-size:12.5px;color:var(--ink-soft);display:block;margin-bottom:4px}
-.field{background:var(--clay-2);border-radius:14px;box-shadow:var(--in);padding:11px 14px;margin:8px 0;white-space:pre-wrap;font-size:14.5px}
-.field b{font-family:'Jua',sans-serif;display:block;color:var(--ink-soft);font-size:13px;margin-bottom:3px}
-#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(150%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:999px;font-family:'Jua',sans-serif;transition:transform .28s;z-index:99}
+.scorebox label{font-size:12.5px;color:var(--ink-soft);display:block;margin-bottom:4px;font-family:'Gowun Dodum',sans-serif;font-weight:400}
+.field{background:var(--paper);border:1px solid rgba(74,55,40,.08);border-radius:4px 12px 4px 12px;padding:11px 14px;margin:8px 0;white-space:pre-wrap;font-size:14.5px}
+.field b{font-family:'Gaegu',sans-serif;font-weight:700;display:block;color:var(--ink-soft);font-size:13px;margin-bottom:3px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--paper-2);
+  padding:12px 22px;border-radius:4px 14px 4px 14px;font-family:'Gaegu',sans-serif;font-weight:700;
+  box-shadow:3px 3px 0 rgba(0,0,0,.2); transition:transform .28s;z-index:99}
 #toast.show{transform:translateX(-50%) translateY(0)}
-.total{font-size:30px;font-family:'Jua',sans-serif}
+.total{font-size:30px;font-family:'Gaegu',sans-serif;font-weight:700;color:var(--terracotta)}
+.classcard{background:var(--paper);border:1.5px dashed var(--line);border-radius:4px 14px 4px 14px;padding:14px 16px;margin:8px 0}
+.classcard h3{margin:0 0 8px;font-size:17px}
+.bar{height:8px;border-radius:999px;background:var(--kraft);overflow:hidden;margin:6px 0}
+.bar>div{height:100%;background:var(--terracotta)}
 </style>
 </head>
 <body>
@@ -61,9 +72,16 @@ tr.clickable:hover{background:var(--clay-2);cursor:pointer}
   </div>
 
   <div id="panel" class="hidden">
-    <!-- 단계 -->
+    <!-- 반별 제출 단계 -->
     <div class="card">
-      <h2 style="margin:0 0 10px;font-size:18px">진행 단계</h2>
+      <h2 style="margin:0 0 4px;font-size:18px">반별 제출 단계</h2>
+      <p class="muted" style="margin:0 0 10px">반마다 수업 시기가 달라도 따로 열고 닫을 수 있어요. 전체 단계가 '대기'일 때만 적용됩니다.</p>
+      <div id="classPhaseBox"></div>
+    </div>
+
+    <!-- 전체 단계 -->
+    <div class="card">
+      <h2 style="margin:0 0 10px;font-size:18px">전체 진행 단계</h2>
       <div class="row" id="phaseBtns"></div>
       <p class="muted" id="phaseHelp" style="margin:10px 0 0"></p>
     </div>
@@ -104,16 +122,15 @@ tr.clickable:hover{background:var(--clay-2);cursor:pointer}
 <script>
 /* ===== 배포한 Apps Script 웹앱 URL을 넣으세요 (index.html과 동일) ===== */
 const API='https://script.google.com/macros/s/AKfycbyGCnJgxXIYOK_tQrHWjATpFZ71MB4VV1nbQhNK5DLIfWiiuvPk1chQewfYvSuSdybGLQ/exec';
-
-const PHASE_LABELS={ready:'대기',submit:'제출',vote:'투표',result:'결과 공개',grading:'채점',closed:'종료'};
+const PHASE_LABELS={ready:'대기',vote:'투표',result:'결과 공개',grading:'채점',closed:'종료'};
 const PHASE_HELP={
-  ready:'학생 화면은 잠겨 있습니다.',
-  submit:'학생이 지역을 뽑고 기획서를 제출할 수 있습니다.',
-  vote:'제출이 잠기고 갤러리·투표가 열립니다.',
+  ready:'각 반은 아래 "반별 제출 단계"에 따라 개별적으로 화면이 바뀝니다.',
+  vote:'모든 반의 제출이 잠기고, 전체 반 통합 갤러리·투표가 열립니다.',
   result:'투표가 잠기고 상위 3작품만 공개됩니다.',
   grading:'학생 화면은 종료 안내로 바뀝니다. 채점에 집중하세요.',
   closed:'모든 학생 활동이 닫힙니다.'
 };
+const CLASS_PHASE_LABELS={ready:'대기',submit:'제출 열기',locked:'마감'};
 let PIN='', ROWS=[], STATUS=null;
 
 async function api(action,payload={}){
@@ -141,8 +158,39 @@ async function loadAll(){
   try{
     STATUS=(await api('adminStatus'));
     ROWS=(await api('adminList')).rows;
-    renderPhase(); renderStatus(); renderList();
+    renderClassPhase(); renderPhase(); renderStatus(); renderList();
   }catch(e){ toast(e.message); }
+}
+
+function renderClassPhase(){
+  const box=document.getElementById('classPhaseBox'); box.innerHTML='';
+  const globalActive = STATUS.phase!=='ready';
+  STATUS.classes.forEach(k=>{
+    const cur=STATUS.classPhases[k];
+    const c=STATUS.byClass[k]||{total:0,submitted:0,assigned:0};
+    const wrap=document.createElement('div'); wrap.className='classcard';
+    const pct = c.total ? Math.round(c.submitted/c.total*100) : 0;
+    wrap.innerHTML=`
+      <h3>${esc(k)}반 <span class="muted" style="font-family:'Gowun Dodum',sans-serif;font-size:13px">· 지역 배정 ${c.assigned}/${c.total} · 제출 ${c.submitted}/${c.total}</span></h3>
+      <div class="bar"><div style="width:${pct}%"></div></div>
+      <div class="row" id="cbtns-${k}"></div>
+      ${globalActive?'<p class="muted" style="margin:6px 0 0">전체 단계가 "'+PHASE_LABELS[STATUS.phase]+'"이라 지금은 이 버튼이 적용되지 않아요.</p>':''}`;
+    box.appendChild(wrap);
+    const btnBox=wrap.querySelector('#cbtns-'+k);
+    Object.keys(CLASS_PHASE_LABELS).forEach(p=>{
+      const b=document.createElement('button');
+      b.textContent=CLASS_PHASE_LABELS[p];
+      if(p==='locked') b.classList.add('warn');
+      if(p===cur) b.classList.add('on');
+      b.disabled=globalActive;
+      b.onclick=async()=>{
+        if(p==='locked' && !confirm(k+'반 제출을 마감할까요? 학생 화면에 즉시 마감 안내가 뜹니다.')) return;
+        try{ await api('adminSetClassPhase',{klass:k,phase:p}); toast(k+'반을 "'+CLASS_PHASE_LABELS[p]+'"(으)로 바꿨습니다.'); loadAll(); }
+        catch(e){ toast(e.message); }
+      };
+      btnBox.appendChild(b);
+    });
+  });
 }
 
 function renderPhase(){
@@ -152,7 +200,7 @@ function renderPhase(){
     b.textContent=PHASE_LABELS[p];
     if(p===STATUS.phase) b.classList.add('on');
     b.onclick=async()=>{
-      if(!confirm('진행 단계를 "'+PHASE_LABELS[p]+'"(으)로 바꿀까요?')) return;
+      if(!confirm('전체 단계를 "'+PHASE_LABELS[p]+'"(으)로 바꿀까요?'+(p==='vote'?'\n\n모든 반의 제출이 잠깁니다.':''))) return;
       try{ await api('adminSetPhase',{phase:p}); toast('단계를 바꿨습니다.'); loadAll(); }catch(e){ toast(e.message); }
     };
     box.appendChild(b);
@@ -163,12 +211,14 @@ function renderPhase(){
 
 function renderStatus(){
   const c=STATUS.byClass;
-  let html='<table><tr><th>반</th><th>제출</th><th>투표</th></tr>';
+  let html='<table><tr><th>반</th><th>지역 배정</th><th>제출</th><th>투표</th></tr>';
   Object.keys(c).sort().forEach(k=>{
-    html+=`<tr><td>${esc(k)}</td><td>${c[k].submitted} / ${c[k].total}</td><td>${c[k].voted} / ${c[k].total}</td></tr>`;
+    html+=`<tr><td>${esc(k)}</td><td>${c[k].assigned} / ${c[k].total}</td><td>${c[k].submitted} / ${c[k].total}</td><td>${c[k].voted} / ${c[k].total}</td></tr>`;
   });
   html+='</table>';
-  html+=`<p class="muted" style="margin-top:10px">남은 지역 ${STATUS.regionsLeft}개 · 총 제출 ${STATUS.totalSubmitted}건</p>`;
+  html+=`<p class="muted" style="margin-top:10px">
+    지역 ${STATUS.regionsUsed} / ${STATUS.totalRegions}개 배정됨 (${STATUS.regionScope==='class'?'반별 중복 허용':'전체 중복 없음'})
+    · 총 제출 ${STATUS.totalSubmitted} / ${STATUS.totalStudents}명</p>`;
   if(STATUS.noSubmit.length) html+=`<div class="field"><b>미제출 ${STATUS.noSubmit.length}명</b>${esc(STATUS.noSubmit.join(' / '))}</div>`;
   if(STATUS.phase==='vote'&&STATUS.noVote.length) html+=`<div class="field"><b>미투표 ${STATUS.noVote.length}명</b>${esc(STATUS.noVote.join(' / '))}</div>`;
   document.getElementById('status').innerHTML=html;
@@ -219,11 +269,10 @@ function renderDetail(d,sc){
       ${assets}
       <div class="field"><b>형성 과정 (${(d.formation||'').length}자)</b>${esc(d.formation)}</div>
       ${refs}
-      <div class="field"><b>AI 정보 검증</b>${esc(d.aiVerify)}</div>
       <div class="field"><b>도안 설명</b>${esc(d.designDesc)}</div>
       <div class="field"><b>AI 도구 · 프롬프트 원문 (${esc(d.aiTool)})</b>${esc(d.prompt)}</div>
       <div class="field"><b>수정 과정</b>${esc(d.revision)}</div>
-      <div class="field"><b>타겟</b>${esc(d.target)}\n${esc(d.targetReason)}</div>
+      <div class="field"><b>타겟</b>${esc(d.target)}</div>
       <div class="field"><b>판매·배포 장소 / 방식</b>${esc(d.place)}\n${esc(d.method)}</div>
       <div class="field"><b>예상 가격과 근거</b>${esc(d.price)}</div>
       <div class="field"><b>지역 변화 ❶ · ${esc(d.change1Key)}</b>${esc(d.change1)}</div>

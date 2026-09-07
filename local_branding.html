@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>로컬 브랜딩 기획 · 한국지리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1ECF7; --clay:#FAF6FF; --clay-2:#F3EDFB;
+  --ink:#463C5E; --ink-soft:#7A6E96;
+  --grape:#B4A2EC; --grape-deep:#8B72D6;
+  --mint:#8FD8C2; --peach:#F6B5A2; --lemon:#F7DE9A;
+  --line:#E2D8F2;
+  --up: 7px 7px 15px rgba(115,95,160,.16), -7px -7px 15px #ffffff;
+  --up-sm: 4px 4px 9px rgba(115,95,160,.14), -4px -4px 9px #ffffff;
+  --in: inset 5px 5px 10px rgba(115,95,160,.18), inset -5px -5px 10px #ffffff;
+  --r:22px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:0 0 64px; background:var(--bg); color:var(--ink);
+  font-family:'Gowun Dodum',system-ui,sans-serif; font-size:16px; line-height:1.75;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,.jua,button,.pill{font-family:'Jua',sans-serif; font-weight:400; letter-spacing:.01em}
+.wrap{max-width:680px; margin:0 auto; padding:20px 18px}
+header.top{padding:26px 18px 10px; max-width:680px; margin:0 auto}
+header.top .eyebrow{font-size:14px; color:var(--ink-soft)}
+header.top h1{margin:2px 0 0; font-size:26px; line-height:1.35}
+
+.card{background:var(--clay); border-radius:var(--r); box-shadow:var(--up); padding:22px; margin:16px 0}
+.card.tight{padding:16px 18px}
+.sunk{background:var(--clay-2); border-radius:18px; box-shadow:var(--in); padding:16px}
+
+label{display:block; font-family:'Jua',sans-serif; font-size:15.5px; margin:18px 0 7px}
+label .hint{font-family:'Gowun Dodum',sans-serif; font-size:13px; color:var(--ink-soft); margin-left:6px}
+input[type=text],input[type=number],textarea,select{
+  width:100%; border:none; outline:none; background:var(--clay-2);
+  border-radius:16px; box-shadow:var(--in); padding:13px 15px;
+  font-family:'Gowun Dodum',sans-serif; font-size:16px; color:var(--ink);
+}
+textarea{min-height:104px; resize:vertical; line-height:1.7}
+select{appearance:none; background-image:linear-gradient(45deg,transparent 50%,var(--grape-deep) 50%),linear-gradient(135deg,var(--grape-deep) 50%,transparent 50%);
+  background-position:calc(100% - 20px) 22px, calc(100% - 14px) 22px; background-size:6px 6px,6px 6px; background-repeat:no-repeat; padding-right:40px}
+input:focus,textarea:focus,select:focus{box-shadow:var(--in),0 0 0 3px rgba(139,114,214,.32)}
+
+button{
+  border:none; cursor:pointer; background:var(--clay); color:var(--ink);
+  border-radius:18px; box-shadow:var(--up-sm); padding:13px 20px; font-size:16.5px;
+  transition:box-shadow .12s ease, transform .12s ease;
+}
+button:active{box-shadow:var(--in); transform:translateY(1px)}
+button:focus-visible{outline:3px solid var(--grape-deep); outline-offset:2px}
+button.primary{background:var(--grape); color:#fff; box-shadow:6px 6px 13px rgba(115,95,160,.28),-5px -5px 12px #fff}
+button.primary:active{box-shadow:inset 5px 5px 10px rgba(80,60,130,.35), inset -4px -4px 9px rgba(255,255,255,.35)}
+button.ghost{background:transparent; box-shadow:none; color:var(--ink-soft); text-decoration:underline; padding:8px 4px}
+button[disabled]{opacity:.45; cursor:not-allowed}
+.row{display:flex; gap:10px; flex-wrap:wrap}
+.row>*{flex:1}
+.right{display:flex; justify-content:space-between; gap:10px; margin-top:26px}
+
+.pill{display:inline-block; padding:6px 14px; border-radius:999px; background:var(--clay-2); box-shadow:var(--up-sm); font-size:14px; margin:0 6px 6px 0}
+.pill.mint{background:var(--mint); color:#1f4e42}
+.pill.peach{background:var(--peach); color:#6b3226}
+.pill.lemon{background:var(--lemon); color:#6d5416}
+
+.steps{display:flex; gap:8px; margin:6px 0 2px}
+.steps div{flex:1; height:9px; border-radius:999px; background:var(--clay-2); box-shadow:var(--in)}
+.steps div.on{background:var(--grape)}
+
+.muted{color:var(--ink-soft); font-size:14.5px}
+.big{font-size:34px; line-height:1.3}
+.center{text-align:center}
+.counter{font-size:13px; color:var(--ink-soft); text-align:right; margin-top:5px}
+.counter.ok{color:#2f8a6d}
+
+#toast{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(140%);
+  background:var(--ink); color:#fff; padding:13px 22px; border-radius:999px;
+  font-family:'Jua',sans-serif; font-size:15px; z-index:99; max-width:88vw; text-align:center;
+  transition:transform .28s cubic-bezier(.2,.9,.3,1.2);
+}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px}
+.work{background:var(--clay); border-radius:20px; box-shadow:var(--up-sm); padding:10px; text-align:center; cursor:pointer}
+.work:active{box-shadow:var(--in)}
+.work img{width:100%; aspect-ratio:1; object-fit:contain; border-radius:14px; background:#fff}
+.work .no{font-family:'Jua',sans-serif; font-size:14px; margin-top:8px}
+.work .sl{font-size:13px; color:var(--ink-soft); min-height:34px}
+.work.mine{outline:3px dashed var(--peach); outline-offset:-3px}
+
+#modal{position:fixed; inset:0; background:rgba(70,60,94,.55); display:none; align-items:center; justify-content:center; padding:18px; z-index:80}
+#modal.show{display:flex}
+#modal .box{background:var(--clay); border-radius:26px; padding:22px; max-width:420px; width:100%; max-height:88vh; overflow:auto}
+#modal img{width:100%; border-radius:18px; background:#fff}
+
+.drop{border-radius:18px; box-shadow:var(--in); background:var(--clay-2); padding:22px; text-align:center; cursor:pointer}
+.drop img{max-width:100%; max-height:230px; border-radius:14px; background:#fff}
+.hidden{display:none !important}
+.assetbox,.refbox{background:var(--clay-2); border-radius:18px; box-shadow:var(--in); padding:14px 16px; margin:10px 0}
+.assetbox label:first-child,.refbox label:first-child{margin-top:2px}
+.del{font-size:13px; color:#b25c48; background:none; box-shadow:none; padding:4px 0; text-decoration:underline}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <p class="eyebrow">한국지리 수행평가</p>
+  <h1>지역 자산으로<br>키링 브랜딩하기</h1>
+</header>
+
+<!-- 로그인 -->
+<section id="s-login" class="wrap">
+  <div class="card">
+    <label for="sid">학번 5자리<span class="hint">학년1 + 반2 + 번호2 (예: 30301)</span></label>
+    <input id="sid" type="text" inputmode="numeric" maxlength="5" placeholder="30301" autocomplete="off">
+    <div class="right"><span></span><button class="primary" onclick="doLogin()">들어가기</button></div>
+  </div>
+</section>
+
+<!-- 안내(대기/종료) -->
+<section id="s-gate" class="wrap hidden">
+  <div class="card center"><p class="big jua" id="gate-title">아직 열리지 않았어요</p><p class="muted" id="gate-desc"></p></div>
+</section>
+
+<!-- 지역 뽑기 -->
+<section id="s-draw" class="wrap hidden">
+  <div class="card center">
+    <p class="muted" id="draw-hello"></p>
+    <p class="big jua">지역을 뽑아 보세요</p>
+    <p class="muted">한 번 뽑으면 바꿀 수 없고, 친구와 겹치지 않아요.</p>
+    <div class="sunk center" style="margin:20px 0"><span class="big jua" id="draw-result">? ? ?</span></div>
+    <button class="primary" id="draw-btn" onclick="drawRegion()" style="width:100%">지역 뽑기</button>
+    <button class="ghost hidden" id="draw-next" onclick="goForm()">기획서 쓰러 가기</button>
+  </div>
+</section>
+
+<!-- 제출 폼 -->
+<section id="s-form" class="wrap hidden">
+  <div class="card tight">
+    <div class="row" style="align-items:center">
+      <span class="pill mint" id="f-region">지역</span>
+      <span class="pill" id="f-who">학생</span>
+    </div>
+    <div class="steps"><div id="p1"></div><div id="p2"></div><div id="p3"></div></div>
+    <p class="muted" id="f-stepname" style="margin:8px 0 0">1단계 · 지역 자산 조사</p>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="card step" id="step1">
+    <label>① 브랜딩할 지역 자산은 무엇인가요?</label>
+    <input id="assetName" type="text" placeholder="예: 보성 녹차밭">
+
+    <label>② 자산 유형과 그 지리적 요인<span class="hint">유형마다 왜 이 지역에서 생겼는지 쓰기</span></label>
+    <div id="assets"></div>
+    <button onclick="addAsset()" id="addAssetBtn">＋ 자산 유형 추가</button>
+
+    <label>③ 이 자산이 만들어진 과정<span class="hint">200자 이상 권장</span></label>
+    <textarea id="formation" placeholder="기후·지형·하천·입지·역사 중 무엇이 이 자산을 만들었는지 이어서 설명해 보세요."></textarea>
+    <div class="counter" id="c-formation">0자</div>
+
+    <label>④ 참고 자료<span class="hint">최소 2개</span></label>
+    <div id="refs"></div>
+    <button onclick="addRef()">＋ 자료 추가</button>
+
+    <label>⑤ AI가 알려준 내용 중 내가 직접 확인하거나 고친 부분</label>
+    <textarea id="aiVerify" placeholder="예: AI가 '조선시대부터'라고 했는데 보성군청 자료를 보니 1939년부터였다."></textarea>
+
+    <div class="right"><span></span><button class="primary" onclick="go(2)">다음</button></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="card step hidden" id="step2">
+    <label>⑥ 슬로건<span class="hint">지리적 특성이 드러나게 한 줄</span></label>
+    <input id="slogan" type="text" placeholder="예: 안개가 키운 초록, 보성">
+
+    <label>⑦ 키링 도안 이미지<span class="hint">5MB 이하</span></label>
+    <div class="drop" id="drop" onclick="document.getElementById('file').click()">
+      <span id="drop-text" class="jua">눌러서 이미지 올리기</span>
+      <img id="preview" class="hidden" alt="올린 도안 미리보기">
+    </div>
+    <input id="file" type="file" accept="image/*" class="hidden" onchange="pickImage(event)">
+
+    <label>⑧ 이 도안에 담은 지리적 특성</label>
+    <textarea id="designDesc" placeholder="색·모양·요소가 이 지역의 무엇을 나타내는지 설명해 주세요."></textarea>
+
+    <label>⑨ 사용한 AI 도구</label>
+    <select id="aiTool">
+      <option value="">선택하세요</option>
+      <option>ChatGPT</option><option>Canva</option><option>미리캔버스</option><option>Midjourney</option><option>기타</option>
+    </select>
+
+    <label>⑩ AI에 넣은 프롬프트 원문</label>
+    <textarea id="prompt" placeholder="쓴 그대로 붙여넣기"></textarea>
+
+    <label>⑪ 처음 결과물을 어떻게 고쳤나요?</label>
+    <textarea id="revision" placeholder="예: 찻잎이 너무 사실적이어서 단순한 도형으로 바꿔달라고 다시 요청했다."></textarea>
+
+    <label>⑫ 이 키링을 살 사람은 누구인가요?</label>
+    <input id="target" type="text" placeholder="예: 녹차밭 사진 찍으러 오는 20대 여행객">
+
+    <label>⑬ 왜 그 사람들인가요?<span class="hint">지역과의 연관성</span></label>
+    <textarea id="targetReason"></textarea>
+
+    <div class="right"><button onclick="go(1)">이전</button><button class="primary" onclick="go(3)">다음</button></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="card step hidden" id="step3">
+    <label>⑭ 이 키링을 어디에서 팔거나 나눠 줄 건가요?</label>
+    <input id="place" type="text" placeholder="예: 보성 녹차밭 입구 매표소, 벌교역 관광안내소">
+
+    <label>⑮ 어떤 방식으로 전달할 건가요?</label>
+    <input id="method" type="text" placeholder="예: 입장권 구매 시 세트 판매, SNS 인증 시 증정">
+
+    <label>⑯ 얼마에 팔고, 왜 그 가격인가요?</label>
+    <textarea id="price" placeholder="제작 원가, 비슷한 굿즈 가격, 살 사람의 지불 의사를 함께 생각해 보세요."></textarea>
+
+    <label>⑰ 지역 변화 ❶</label>
+    <select id="change1Key" onchange="syncChange()"><option value="">관점을 고르세요</option></select>
+    <p class="muted" id="q1" style="margin:8px 0"></p>
+    <textarea id="change1"></textarea>
+
+    <label>⑱ 지역 변화 ❷<span class="hint">❶과 다른 관점</span></label>
+    <select id="change2Key" onchange="syncChange()"><option value="">관점을 고르세요</option></select>
+    <p class="muted" id="q2" style="margin:8px 0"></p>
+    <textarea id="change2"></textarea>
+
+    <div class="right"><button onclick="go(2)">이전</button><button class="primary" id="submitBtn" onclick="submitAll()">제출하기</button></div>
+    <p class="muted center" style="margin-top:12px">마감 전에는 다시 들어와 고칠 수 있어요.</p>
+  </div>
+</section>
+
+<!-- 제출 완료 -->
+<section id="s-done" class="wrap hidden">
+  <div class="card center">
+    <p class="big jua">제출했어요</p>
+    <p class="muted">작품 번호 <b id="d-work"></b> · <span id="d-region"></span></p>
+    <img id="d-img" style="width:60%; border-radius:18px; background:#fff; margin:14px 0" alt="내가 낸 도안">
+    <p class="jua" id="d-slogan"></p>
+    <button onclick="goForm()">고치러 가기</button>
+  </div>
+</section>
+
+<!-- 갤러리 · 투표 -->
+<section id="s-gallery" class="wrap hidden">
+  <div class="card tight center">
+    <p class="jua" style="font-size:20px; margin:0">마음에 드는 작품에 한 표</p>
+    <p class="muted" id="g-status">한 사람당 한 표, 바꿀 수 없어요.</p>
+  </div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<!-- 결과 -->
+<section id="s-rank" class="wrap hidden">
+  <div class="card center"><p class="big jua">가장 많은 표를 받은 세 작품</p><p class="muted">실제 키링으로 만들어 드립니다.</p></div>
+  <div id="rank"></div>
+</section>
+
+<div id="modal" onclick="closeModal(event)"><div class="box" id="modal-box"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ===== 배포한 Apps Script 웹앱 URL을 넣으세요 ===== */
+const API = 'https://script.google.com/macros/s/여기에_배포ID/exec';
+
+const CHANGES = {
+  inflow:{label:'유입 인구 변화', q:'이 키링이 잘 팔린다면 이 지역을 찾는 사람은 어떤 유형이고, 얼마나 늘어날까요? 그렇게 본 근거는?'},
+  economy:{label:'지역 경제 파급효과', q:'방문객이 늘면 이 지역의 어떤 산업·상권이 영향을 받을까요? 구체적인 업종이나 장소를 들어 설명해 주세요.'},
+  image:{label:'장소 이미지 변화', q:'지금 이 지역은 밖에서 어떤 이미지인가요? 브랜딩 뒤에는 어떻게 바뀌길 기대하나요?'},
+  structure:{label:'공간 구조 변화', q:'브랜딩이 오래 성공한다면 토지 이용·상업지역·교통 같은 공간 구조는 어떻게 달라질까요?'}
+};
+
+let ME=null, PHASE='ready', IMG=null, IMG_MIME=null, CUR=1;
+
+/* --- 통신 --- */
+async function api(action, payload={}){
+  const res = await fetch(API,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({action}, payload))
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || '알 수 없는 오류');
+  return data;
+}
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200);
+}
+function show(id){
+  ['s-login','s-gate','s-draw','s-form','s-done','s-gallery','s-rank']
+    .forEach(s=>document.getElementById(s).classList.toggle('hidden', s!==id));
+  window.scrollTo(0,0);
+}
+
+/* --- 로그인 --- */
+async function doLogin(){
+  const sid=document.getElementById('sid').value.trim();
+  if(!/^\d{5}$/.test(sid)) return toast('학번 5자리를 정확히 입력해 주세요.');
+  try{
+    const r=await api('login',{sid});
+    ME={sid, name:r.student.name, klass:r.student.klass, region:r.region, submitted:r.submitted, voted:r.voted};
+    PHASE=r.phase;
+    sessionStorage.setItem('sid',sid);
+    routePhase();
+  }catch(e){ toast(e.message); }
+}
+
+function routePhase(){
+  document.getElementById('f-who').textContent = ME.klass+'반 '+ME.name;
+  if(PHASE==='submit'){
+    if(!ME.region){ document.getElementById('draw-hello').textContent=ME.name+'님, 반가워요'; return show('s-draw'); }
+    if(ME.submitted) return showDone();
+    return goForm();
+  }
+  if(PHASE==='vote') return loadGallery();
+  if(PHASE==='result') return loadRanking();
+  gate(PHASE==='ready' ? '아직 열리지 않았어요' : '수행평가가 끝났어요',
+       PHASE==='ready' ? '선생님이 시작하면 이 화면이 바뀝니다.' : '채점 중입니다. 결과는 수업에서 안내할게요.');
+}
+function gate(t,d){
+  document.getElementById('gate-title').textContent=t;
+  document.getElementById('gate-desc').textContent=d;
+  show('s-gate');
+}
+
+/* --- 지역 뽑기 --- */
+async function drawRegion(){
+  const btn=document.getElementById('draw-btn'); btn.disabled=true; btn.textContent='뽑는 중…';
+  try{
+    const r=await api('assignRegion',{sid:ME.sid});
+    ME.region=r.region;
+    document.getElementById('draw-result').textContent=r.region;
+    btn.classList.add('hidden');
+    document.getElementById('draw-next').classList.remove('hidden');
+  }catch(e){ toast(e.message); btn.disabled=false; btn.textContent='지역 뽑기'; }
+}
+
+/* --- 폼 --- */
+async function goForm(){
+  document.getElementById('f-region').textContent=ME.region;
+  if(!document.getElementById('assets').children.length){ addAsset(); addRef(); addRef(); fillChangeSelects(); }
+  try{
+    const r=await api('getSubmission',{sid:ME.sid});
+    if(r.data) fillForm(r.data);
+  }catch(e){}
+  go(1); show('s-form');
+}
+
+function go(n){
+  CUR=n;
+  [1,2,3].forEach(i=>document.getElementById('step'+i).classList.toggle('hidden', i!==n));
+  [1,2,3].forEach(i=>document.getElementById('p'+i).classList.toggle('on', i<=n));
+  document.getElementById('f-stepname').textContent =
+    n===1?'1단계 · 지역 자산 조사' : n===2?'2단계 · 키링 디자인' : '3단계 · 마케팅 기획';
+  window.scrollTo(0,0);
+}
+
+function addAsset(v){
+  const box=document.getElementById('assets');
+  if(box.children.length>=4) return toast('자산 유형은 최대 4개까지예요.');
+  const i=box.children.length+1;
+  const d=document.createElement('div'); d.className='assetbox';
+  d.innerHTML=`
+    <label>자산 유형 ${i}</label>
+    <select class="a-type">
+      <option value="">선택하세요</option>
+      <option>자연 자산 (지형·기후·하천·생태)</option>
+      <option>인문 자산 (역사·문화·축제·전통)</option>
+      <option>산업 자산 (특산물·제조업·농수산업)</option>
+      <option>관광 자산 (관광지·체험시설·경관)</option>
+    </select>
+    <label>이 유형의 지리적 요인<span class="hint">기후·지형·하천·입지·역사 등</span></label>
+    <textarea class="a-geo" style="min-height:80px"></textarea>
+    ${i>1?'<button class="del" onclick="this.parentNode.remove()">이 유형 지우기</button>':''}`;
+  box.appendChild(d);
+  if(v){ d.querySelector('.a-type').value=v.type||''; d.querySelector('.a-geo').value=v.geo||''; }
+}
+
+function addRef(v){
+  const box=document.getElementById('refs');
+  const i=box.children.length+1;
+  const d=document.createElement('div'); d.className='refbox';
+  d.innerHTML=`
+    <label>자료 ${i} 제목</label><input class="r-title" type="text" placeholder="예: 보성군 녹차산업 현황">
+    <label>링크 또는 출처</label><input class="r-url" type="text" placeholder="https:// 또는 책·기사 이름">
+    <label>자료 종류</label>
+    <select class="r-kind">
+      <option value="">선택하세요</option>
+      <option>정부·공공기관</option><option>학술자료</option><option>언론보도</option><option>지자체</option><option>기타</option>
+    </select>
+    ${i>2?'<button class="del" onclick="this.parentNode.remove()">이 자료 지우기</button>':''}`;
+  box.appendChild(d);
+  if(v){ d.querySelector('.r-title').value=v.title||''; d.querySelector('.r-url').value=v.url||''; d.querySelector('.r-kind').value=v.kind||''; }
+}
+
+function fillChangeSelects(){
+  [1,2].forEach(n=>{
+    const s=document.getElementById('change'+n+'Key');
+    Object.keys(CHANGES).forEach(k=>{
+      const o=document.createElement('option'); o.value=k; o.textContent=CHANGES[k].label; s.appendChild(o);
+    });
+  });
+}
+function syncChange(){
+  const a=document.getElementById('change1Key').value, b=document.getElementById('change2Key').value;
+  document.getElementById('q1').textContent = a?CHANGES[a].q:'';
+  document.getElementById('q2').textContent = b?CHANGES[b].q:'';
+  [['change2Key',a],['change1Key',b]].forEach(([id,other])=>{
+    [...document.getElementById(id).options].forEach(o=>{ o.disabled = o.value && o.value===other; });
+  });
+  if(a && a===b){ document.getElementById('change2Key').value=''; document.getElementById('q2').textContent=''; toast('❶과 다른 관점을 골라 주세요.'); }
+}
+
+/* --- 이미지 (1200px로 줄여서 업로드) --- */
+function pickImage(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  if(f.size>5*1024*1024) return toast('5MB보다 작은 이미지로 올려 주세요.');
+  const r=new FileReader();
+  r.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=1200, sc=Math.min(1, max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const url=c.toDataURL('image/png');
+      IMG=url.split(',')[1]; IMG_MIME='image/png';
+      const p=document.getElementById('preview');
+      p.src=url; p.classList.remove('hidden');
+      document.getElementById('drop-text').textContent='다른 이미지로 바꾸기';
+    };
+    img.src=r.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function collect(){
+  const assets=[...document.querySelectorAll('#assets .assetbox')].map(d=>({
+    type:d.querySelector('.a-type').value, geo:d.querySelector('.a-geo').value.trim()
+  })).filter(a=>a.type);
+  const refs=[...document.querySelectorAll('#refs .refbox')].map(d=>({
+    title:d.querySelector('.r-title').value.trim(), url:d.querySelector('.r-url').value.trim(), kind:d.querySelector('.r-kind').value
+  })).filter(r=>r.title);
+  const v=id=>document.getElementById(id).value.trim();
+  return {
+    assetName:v('assetName'), assets, formation:v('formation'), refs, aiVerify:v('aiVerify'),
+    slogan:v('slogan'), designDesc:v('designDesc'), aiTool:v('aiTool'), prompt:v('prompt'),
+    revision:v('revision'), target:v('target'), targetReason:v('targetReason'),
+    place:v('place'), method:v('method'), price:v('price'),
+    change1Key:v('change1Key'), change1:v('change1'), change2Key:v('change2Key'), change2:v('change2')
+  };
+}
+
+function fillForm(d){
+  const set=(id,val)=>{ if(document.getElementById(id)) document.getElementById(id).value=val||''; };
+  set('assetName',d.assetName); set('formation',d.formation); set('aiVerify',d.aiVerify);
+  set('slogan',d.slogan); set('designDesc',d.designDesc); set('aiTool',d.aiTool);
+  set('prompt',d.prompt); set('revision',d.revision); set('target',d.target); set('targetReason',d.targetReason);
+  set('place',d.place); set('method',d.method); set('price',d.price);
+  const key=lbl=>Object.keys(CHANGES).find(k=>CHANGES[k].label===lbl)||'';
+  set('change1Key',key(d.change1Key)); set('change1',d.change1);
+  set('change2Key',key(d.change2Key)); set('change2',d.change2);
+  syncChange();
+  document.getElementById('assets').innerHTML=''; (d.assets||[]).forEach(a=>addAsset(a)); if(!d.assets||!d.assets.length) addAsset();
+  document.getElementById('refs').innerHTML=''; (d.refs||[]).forEach(r=>addRef(r)); while(document.getElementById('refs').children.length<2) addRef();
+  if(d.imageUrl){
+    const p=document.getElementById('preview'); p.src=d.imageUrl; p.classList.remove('hidden');
+    document.getElementById('drop-text').textContent='다른 이미지로 바꾸기';
+    IMG=null;
+  }
+  ME.saved=d;
+  document.getElementById('c-formation').textContent=(d.formation||'').length+'자';
+}
+
+async function submitAll(){
+  const d=collect();
+  const need=[['assetName','자산명'],['formation','형성 과정'],['slogan','슬로건'],['designDesc','도안 설명'],
+              ['target','타겟'],['place','판매·배포 장소'],['method','판매·배포 방식'],['price','예상 가격']];
+  for(const [k,ko] of need) if(!d[k]) return toast(ko+' 칸이 비어 있어요.');
+  if(!d.assets.length || d.assets.some(a=>!a.geo)) return toast('자산 유형마다 지리적 요인을 써 주세요.');
+  if(d.refs.length<2) return toast('참고 자료를 2개 이상 넣어 주세요.');
+  if(!d.change1Key || !d.change2Key) return toast('지역 변화 관점을 2개 골라 주세요.');
+  if(!d.change1 || !d.change2) return toast('고른 관점에 대한 서술을 채워 주세요.');
+  if(!IMG && !(ME.saved && ME.saved.imageFileId)) return toast('키링 도안 이미지를 올려 주세요.');
+
+  const btn=document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='보내는 중…';
+  try{
+    const r=await api('submit',{sid:ME.sid, data:d, imageBase64:IMG, imageMime:IMG_MIME});
+    ME.submitted=true; IMG=null;
+    toast(r.updated?'수정한 내용을 저장했어요.':'제출 완료!');
+    showDone();
+  }catch(e){ toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent='제출하기'; }
+}
+
+async function showDone(){
+  const r=await api('getSubmission',{sid:ME.sid});
+  const d=r.data; if(!d) return goForm();
+  ME.saved=d;
+  document.getElementById('d-work').textContent=d.workId;
+  document.getElementById('d-region').textContent=d.region;
+  document.getElementById('d-img').src=d.imageUrl;
+  document.getElementById('d-slogan').textContent='“'+d.slogan+'”';
+  show('s-done');
+}
+
+/* --- 갤러리 · 투표 --- */
+async function loadGallery(){
+  try{
+    const r=await api('getGallery',{sid:ME.sid});
+    ME.voted=r.voted;
+    document.getElementById('g-status').textContent = r.voted ? '투표를 마쳤어요. 다른 작품도 구경해 보세요.' : '한 사람당 한 표, 바꿀 수 없어요.';
+    const g=document.getElementById('grid'); g.innerHTML='';
+    r.items.forEach(it=>{
+      const d=document.createElement('div');
+      d.className='work'+(it.isMine?' mine':'');
+      d.innerHTML=`<img src="${it.imageUrl}" alt="작품 ${it.workId}" loading="lazy">
+        <div class="no">${it.workId}${it.isMine?' · 내 작품':''}</div>
+        <div class="sl">“${esc(it.slogan)}”</div>`;
+      d.onclick=()=>openWork(it);
+      g.appendChild(d);
+    });
+    show('s-gallery');
+  }catch(e){ gate('갤러리 준비 중', e.message); }
+}
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function openWork(it){
+  const b=document.getElementById('modal-box');
+  b.innerHTML=`<img src="${it.imageUrl}" alt="작품 ${it.workId}">
+    <p class="jua" style="font-size:19px; margin:14px 0 4px">“${esc(it.slogan)}”</p>
+    <p class="muted">${esc(it.region)} · ${esc(it.assetName)}</p>
+    <div class="sunk" style="margin:12px 0">${esc(it.designDesc)}</div>
+    <p class="muted">주요 대상: ${esc(it.target)}</p>
+    <div class="right">
+      <button onclick="closeModal(null,true)">닫기</button>
+      ${it.isMine ? '<button disabled>내 작품이에요</button>'
+        : ME.voted ? '<button disabled>이미 투표했어요</button>'
+        : `<button class="primary" onclick="castVote('${it.workId}')">이 작품에 투표</button>`}
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(ev,force){ if(force||ev.target.id==='modal') document.getElementById('modal').classList.remove('show'); }
+
+async function castVote(workId){
+  try{ await api('vote',{sid:ME.sid, workId}); toast('투표했어요!'); closeModal(null,true); loadGallery(); }
+  catch(e){ toast(e.message); }
+}
+
+/* --- 결과 --- */
+async function loadRanking(){
+  try{
+    const r=await api('getRanking');
+    const box=document.getElementById('rank'); box.innerHTML='';
+    const medal=['🥇','🥈','🥉'];
+    r.top.forEach(t=>{
+      const d=document.createElement('div'); d.className='card center';
+      d.innerHTML=`<p class="big">${medal[t.rank-1]}</p>
+        <img src="${t.imageUrl}" style="width:62%; border-radius:18px; background:#fff" alt="${t.rank}위 작품">
+        <p class="jua" style="font-size:19px; margin:12px 0 2px">“${esc(t.slogan)}”</p>
+        <p class="muted">${esc(t.region)}</p>`;
+      box.appendChild(d);
+    });
+    show('s-rank');
+  }catch(e){ gate('결과 공개 전이에요', e.message); }
+}
+
+/* --- 초기화 --- */
+document.getElementById('formation').addEventListener('input',e=>{
+  const n=e.target.value.length, c=document.getElementById('c-formation');
+  c.textContent=n+'자'+(n<200?' (200자 이상 권장)':' · 충분해요');
+  c.classList.toggle('ok', n>=200);
+});
+document.getElementById('sid').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+(function(){ const s=sessionStorage.getItem('sid'); if(s){ document.getElementById('sid').value=s; doLogin(); } })();
+</script>
+</body>
+</html>

@@ -544,12 +544,13 @@ function pickImage(ev){
         turl=tryEncode(tc,tq,'image/jpeg');
         tries++;
       }
-      THUMB = turl.length<=48000 ? turl : null; // 그래도 크면 미리보기는 포기하고 서버 쪽 대체 경로에 맡긴다
+      THUMB = turl.length<=44000 ? turl : null; // 그래도 크면 미리보기는 포기하고 서버 쪽 대체 경로에 맡긴다
 
       const p=document.getElementById('preview');
       p.src=url; p.classList.remove('hidden');
       document.getElementById('drop-text').textContent='다른 이미지로 바꾸기';
       status.textContent=`올릴 준비 완료 (약 ${(bytes/1024).toFixed(0)}KB)`;
+      console.log('[이미지 준비 완료]', 'IMG bytes≈'+bytes, 'THUMB', THUMB ? (THUMB.length+'자') : '생성 실패(null)');
     };
     img.onerror=()=>{ status.textContent=''; toast('이미지를 읽지 못했어요. 다른 파일로 시도해 주세요.'); };
     img.src=r.result;
@@ -608,6 +609,7 @@ async function submitAll(){
   if(!IMG && !(ME.saved && ME.saved.imageFileId)) return toast('키링 도안 이미지를 올려 주세요.');
 
   const btn=document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='보내는 중…';
+  console.log('[제출 전송]', 'IMG', IMG?IMG.length+'자':'(재제출, 새 이미지 없음)', 'THUMB', THUMB?THUMB.length+'자':'(재제출, 새 미리보기 없음)');
   try{
     const r=await api('submit',{sid:ME.sid, data:d, imageBase64:IMG, imageMime:IMG_MIME, thumbBase64:THUMB});
     ME.submitted=true; IMG=null; THUMB=null;
@@ -634,6 +636,7 @@ async function showDone(){
 async function loadGallery(){
   try{
     const r=await api('getGallery',{sid:ME.sid});
+    console.log('[갤러리 응답]', r.items.map(it=>({workId:it.workId, imageUrl_길이: it.imageUrl?it.imageUrl.length+'자':'(비어있음)'})));
     ME.voted=r.voted;
     document.getElementById('g-status').textContent = r.voted ? '투표를 마쳤어요. 다른 작품도 구경해 보세요.' : '한 사람당 한 표, 바꿀 수 없어요.';
     const g=document.getElementById('grid'); g.innerHTML='';

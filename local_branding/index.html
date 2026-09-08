@@ -269,7 +269,10 @@ button[disabled]{opacity:.45; cursor:not-allowed}
       <span class="pill" id="f-who">학생</span>
     </div>
     <div class="steps"><div id="p1"></div><div id="p2"></div><div id="p3"></div></div>
-    <p class="muted" id="f-stepname" style="margin:8px 0 0">1단계 · 지역 자산 조사</p>
+    <div class="row" style="align-items:center; margin-top:8px">
+      <p class="muted" id="f-stepname" style="margin:0">1단계 · 지역 자산 조사</p>
+      <button class="ghost" id="saveProgressBtn" onclick="saveProgress()" style="flex:0; white-space:nowrap">지금까지 임시저장</button>
+    </div>
   </div>
 
   <!-- Step 1 -->
@@ -504,10 +507,10 @@ async function goForm(){
   go(1); show('s-form');
 }
 
-/* --- 임시저장: 서버 제출 전까지, 입력하는 동안 이 브라우저에만 계속 저장해 둔다.
-   새로고침·탭을 닫았다 다시 열어도(같은 기기·같은 브라우저라면) 복구된다.
-   제출 조건(필수 항목)은 그대로 두고, 그 전 단계의 안전망만 추가하는 것이라
-   "하나라도 비면 제출 안 됨" 규칙과는 무관하다. --- */
+/* --- 임시저장: 제출 전까지 입력하는 동안 이 브라우저(localStorage)에 계속 저장해 둔다.
+   새로고침은 물론 브라우저를 완전히 껐다 켜거나 다음 차시에 다시 들어와도,
+   같은 기기·같은 브라우저라면 그대로 복구된다. 제출 자체는 빈 칸이 있어도 되므로
+   이 임시저장은 "제출 전에 실수로 새로고침되는 사고"만 막아주는 안전망이다. --- */
 function draftKey_(){ return ME ? 'draft_'+ME.sid : null; }
 
 function saveDraftLocal(){
@@ -517,7 +520,7 @@ function saveDraftLocal(){
     d.imgData=IMG; d.imgMime=IMG_MIME; d.thumbData=THUMB;
     const p=document.getElementById('preview');
     d.imgPreviewSrc = (!p.classList.contains('hidden')) ? p.src : '';
-    sessionStorage.setItem(draftKey_(), JSON.stringify(d));
+    localStorage.setItem(draftKey_(), JSON.stringify(d));
   }catch(e){ /* 용량 초과 등은 무시 - 임시저장은 있으면 좋은 기능이지 핵심 기능이 아님 */ }
 }
 
@@ -526,7 +529,7 @@ function scheduleDraftSave(){ clearTimeout(draftTimer); draftTimer=setTimeout(sa
 
 function restoreDraft(){
   const key=draftKey_(); if(!key) return;
-  const raw=sessionStorage.getItem(key); if(!raw) return;
+  const raw=localStorage.getItem(key); if(!raw) return;
   try{
     const d=JSON.parse(raw);
     fillForm(d);
@@ -711,25 +714,38 @@ function fillForm(d){
 
 async function submitAll(){
   const d=collect();
-  const need=[['assetName','자산명'],['formation','형성 과정'],['slogan','슬로건'],['designDesc','도안 설명'],
-              ['target','타겟'],['place','판매·배포 장소'],['method','판매·배포 방식'],['price','예상 가격']];
-  for(const [k,ko] of need) if(!d[k]) return toast(ko+' 칸이 비어 있어요.');
-  if(!d.assets.length || d.assets.some(a=>!a.geo)) return toast('자산 유형마다 지리적 요인을 써 주세요.');
-  if(d.refs.length<1) return toast('참고 자료를 1개 이상 넣어 주세요.');
-  if(!d.change1Key || !d.change2Key) return toast('지역 변화 관점을 2개 골라 주세요.');
-  if(!d.change1 || !d.change2) return toast('고른 관점에 대한 서술을 채워 주세요.');
-  if(!IMG && !(ME.saved && ME.saved.imageFileId)) return toast('키링 도안 이미지를 올려 주세요.');
+  // 1차시 안에 다 못 끝내는 경우가 있어 필수 항목 검사는 없앴다. 빈 칸이 있어도 일단 제출되고,
+  // 마감 전까지 다시 들어와 이어서 채운 뒤 제출하면 그 내용으로 덮어써진다.
+  if(d.change1Key && d.change2Key && d.change1Key===d.change2Key) return toast('지역 변화 관점 ❶❷은 서로 다른 걸 골라주세요.');
 
   const btn=document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='보내는 중…';
   console.log('[제출 전송]', 'IMG', IMG?IMG.length+'자':'(재제출, 새 이미지 없음)', 'THUMB', THUMB?THUMB.length+'자':'(재제출, 새 미리보기 없음)');
   try{
     const r=await api('submit',{sid:ME.sid, data:d, imageBase64:IMG, imageMime:IMG_MIME, thumbBase64:THUMB});
     ME.submitted=true; IMG=null; THUMB=null;
-    sessionStorage.removeItem(draftKey_()); // 서버에 정식으로 실렸으니 이제 이 기기의 임시저장은 필요 없음
+    localStorage.removeItem(draftKey_()); // 서버에 정식으로 실렸으니 이제 이 기기의 임시저장은 필요 없음
     toast(r.updated?'수정한 내용을 저장했어요.':'제출 완료!');
     showDone();
   }catch(e){ toast(e.message); }
   finally{ btn.disabled=false; btn.textContent='제출하기'; }
+}
+
+// 어느 단계에 있든(1·2·3단계 상관없이) 지금까지 쓴 내용을 서버(구글시트)에 바로 저장한다.
+// "제출하기"와 같은 서버 동작을 쓰기 때문에, 이후 다른 기기·다른 브라우저에서 같은 학번으로
+// 로그인하면 이 내용이 그대로 불러와진다. 화면은 이동하지 않고 계속 작성할 수 있다.
+async function saveProgress(){
+  const d=collect();
+  if(d.change1Key && d.change2Key && d.change1Key===d.change2Key) return toast('지역 변화 관점 ❶❷은 서로 다른 걸 골라주세요.');
+
+  const btn=document.getElementById('saveProgressBtn'); const orig=btn.textContent;
+  btn.disabled=true; btn.textContent='저장 중…';
+  try{
+    await api('submit',{sid:ME.sid, data:d, imageBase64:IMG, imageMime:IMG_MIME, thumbBase64:THUMB});
+    IMG=null; THUMB=null; // 서버에 이미 실렸으니, 다음 저장부터 새 이미지를 안 고르면 방금 올린 이미지가 계속 쓰인다
+    localStorage.removeItem(draftKey_());
+    toast('임시저장했어요. 다른 기기에서도 이 학번으로 들어오면 이어서 할 수 있어요.');
+  }catch(e){ toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent=orig; }
 }
 
 async function showDone(){

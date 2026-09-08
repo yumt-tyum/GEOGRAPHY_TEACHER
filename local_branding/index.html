@@ -495,13 +495,55 @@ async function goForm(){
   if(!document.getElementById('assets').children.length){ addAsset(); addRef(); fillChangeSelects(); }
   try{
     const r=await api('getSubmission',{sid:ME.sid});
-    if(r.data) fillForm(r.data);
+    if(r.data){
+      fillForm(r.data);
+    } else {
+      restoreDraft(); // 서버에 낸 적이 없으면, 이 기기에 임시저장된 내용이 있는지 확인
+    }
   }catch(e){}
   go(1); show('s-form');
 }
 
+/* --- 임시저장: 서버 제출 전까지, 입력하는 동안 이 브라우저에만 계속 저장해 둔다.
+   새로고침·탭을 닫았다 다시 열어도(같은 기기·같은 브라우저라면) 복구된다.
+   제출 조건(필수 항목)은 그대로 두고, 그 전 단계의 안전망만 추가하는 것이라
+   "하나라도 비면 제출 안 됨" 규칙과는 무관하다. --- */
+function draftKey_(){ return ME ? 'draft_'+ME.sid : null; }
+
+function saveDraftLocal(){
+  if(!ME || ME.submitted) return; // 이미 서버에 제출된 뒤에는 임시저장할 필요 없음
+  try{
+    const d=collect();
+    d.imgData=IMG; d.imgMime=IMG_MIME; d.thumbData=THUMB;
+    const p=document.getElementById('preview');
+    d.imgPreviewSrc = (!p.classList.contains('hidden')) ? p.src : '';
+    sessionStorage.setItem(draftKey_(), JSON.stringify(d));
+  }catch(e){ /* 용량 초과 등은 무시 - 임시저장은 있으면 좋은 기능이지 핵심 기능이 아님 */ }
+}
+
+let draftTimer=null;
+function scheduleDraftSave(){ clearTimeout(draftTimer); draftTimer=setTimeout(saveDraftLocal, 800); }
+
+function restoreDraft(){
+  const key=draftKey_(); if(!key) return;
+  const raw=sessionStorage.getItem(key); if(!raw) return;
+  try{
+    const d=JSON.parse(raw);
+    fillForm(d);
+    if(d.imgPreviewSrc){
+      const p=document.getElementById('preview');
+      p.src=d.imgPreviewSrc; p.classList.remove('hidden');
+      document.getElementById('drop-text').textContent='다른 이미지로 바꾸기';
+      document.getElementById('imgStatus').textContent='임시 저장된 이미지를 불러왔어요';
+    }
+    IMG=d.imgData||null; IMG_MIME=d.imgMime||null; THUMB=d.thumbData||null;
+    toast('저장해둔 내용을 불러왔어요.');
+  }catch(e){}
+}
+
 function go(n){
   CUR=n;
+  saveDraftLocal(); // 단계를 넘어갈 때도 한 번 더 저장 (디바운스 타이머를 기다리지 않도록)
   [1,2,3].forEach(i=>document.getElementById('step'+i).classList.toggle('hidden', i!==n));
   [1,2,3].forEach(i=>document.getElementById('p'+i).classList.toggle('on', i<=n));
   document.getElementById('f-stepname').textContent =
@@ -633,12 +675,15 @@ function collect(){
     title:d.querySelector('.r-title').value.trim(), url:d.querySelector('.r-url').value.trim(), kind:d.querySelector('.r-kind').value
   })).filter(r=>r.title);
   const v=id=>document.getElementById(id).value.trim();
+  // change1Key/change2Key는 서버가 저장하는 모양(한글 라벨)으로 맞춰서 내보낸다.
+  // 이러면 서버에서 받은 데이터든 이 브라우저의 임시저장이든 fillForm() 하나로 똑같이 복원된다.
+  const chLabel=k=>CHANGES[k]?CHANGES[k].label:'';
   return {
     assetName:v('assetName'), assets, formation:v('formation'), refs,
     slogan:v('slogan'), designDesc:v('designDesc'), aiTool:v('aiTool'), prompt:v('prompt'),
     revision:v('revision'), target:v('target'),
     place:v('place'), method:v('method'), price:v('price'),
-    change1Key:v('change1Key'), change1:v('change1'), change2Key:v('change2Key'), change2:v('change2')
+    change1Key:chLabel(v('change1Key')), change1:v('change1'), change2Key:chLabel(v('change2Key')), change2:v('change2')
   };
 }
 
@@ -680,6 +725,7 @@ async function submitAll(){
   try{
     const r=await api('submit',{sid:ME.sid, data:d, imageBase64:IMG, imageMime:IMG_MIME, thumbBase64:THUMB});
     ME.submitted=true; IMG=null; THUMB=null;
+    sessionStorage.removeItem(draftKey_()); // 서버에 정식으로 실렸으니 이제 이 기기의 임시저장은 필요 없음
     toast(r.updated?'수정한 내용을 저장했어요.':'제출 완료!');
     showDone();
   }catch(e){ toast(e.message); }
@@ -776,6 +822,8 @@ document.getElementById('formation').addEventListener('input',e=>{
   c.classList.toggle('ok', n>=200);
 });
 document.getElementById('sid').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('s-form').addEventListener('input', scheduleDraftSave);
+document.getElementById('s-form').addEventListener('change', scheduleDraftSave);
 (function(){ const s=sessionStorage.getItem('sid'); if(s){ document.getElementById('sid').value=s; doLogin(); } })();
 </script>
 </body>

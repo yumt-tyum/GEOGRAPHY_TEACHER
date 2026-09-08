@@ -124,6 +124,7 @@ button[disabled]{opacity:.45; cursor:not-allowed; box-shadow:2px 2px 0 var(--ink
 .work:nth-child(even){transform:rotate(1.2deg)}
 .work:active{box-shadow:0 3px 6px rgba(74,55,40,.25)}
 .work img{width:100%; aspect-ratio:1; object-fit:contain; background:#fdfaf2}
+.work .imgMissing{width:100%; aspect-ratio:1}
 .work .no{font-family:'Gaegu',sans-serif; font-weight:700; font-size:14px; margin-top:8px}
 .work .sl{font-size:13px; color:var(--ink-soft); min-height:34px}
 .work.mine{outline:3px dashed var(--terracotta); outline-offset:-3px}
@@ -132,6 +133,14 @@ button[disabled]{opacity:.45; cursor:not-allowed; box-shadow:2px 2px 0 var(--ink
 #modal.show{display:flex}
 #modal .box{background:var(--paper-2); border-radius:4px 20px 4px 20px; padding:22px; max-width:420px; width:100%; max-height:88vh; overflow:auto; box-shadow:6px 6px 0 rgba(74,55,40,.25)}
 #modal img{width:100%; border-radius:2px; background:#fff; padding:8px 8px 20px; box-shadow:0 6px 14px rgba(74,55,40,.2)}
+#modal .imgMissing{width:100%; aspect-ratio:1}
+
+.imgMissing{
+  display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  background:var(--paper); border:2px dashed var(--line); border-radius:4px 14px 4px 14px;
+  color:var(--ink-soft); font-size:28px; text-align:center; box-sizing:border-box; padding:14px;
+}
+.imgMissing span{font-family:'Gowun Dodum',sans-serif; font-size:13px; line-height:1.4}
 
 .drop{border-radius:4px 14px 4px 14px; border:2px dashed var(--line); background:var(--paper); padding:22px; text-align:center; cursor:pointer}
 .drop img{max-width:100%; max-height:230px; background:#fff; padding:8px 8px 20px; box-shadow:0 6px 14px rgba(74,55,40,.2)}
@@ -614,7 +623,9 @@ async function showDone(){
   ME.saved=d;
   document.getElementById('d-work').textContent=d.workId;
   document.getElementById('d-region').textContent=d.region;
-  document.getElementById('d-img').src=d.imageUrl;
+  const img=document.getElementById('d-img');
+  if(d.imageUrl){ img.src=d.imageUrl; img.classList.remove('hidden'); }
+  else { img.classList.add('hidden'); }
   document.getElementById('d-slogan').textContent='“'+d.slogan+'”';
   show('s-done');
 }
@@ -629,7 +640,7 @@ async function loadGallery(){
     r.items.forEach(it=>{
       const d=document.createElement('div');
       d.className='work'+(it.isMine?' mine':'');
-      d.innerHTML=`<img src="${it.imageUrl}" alt="작품 ${it.workId}" loading="lazy">
+      d.innerHTML=`${imgHtml(it.imageUrl, '작품 '+it.workId)}
         <div class="no">${it.workId}${it.isMine?' · 내 작품':''}</div>
         <div class="sl">“${esc(it.slogan)}”</div>`;
       d.onclick=()=>openWork(it);
@@ -640,13 +651,21 @@ async function loadGallery(){
 }
 function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+// 이미지 데이터가 통째로 JSON에 실려 오는 방식이라, 안 나오는 경우는 딱 하나 -
+// 서버가 보낼 데이터 자체가 비어 있는 경우뿐이다(예: 원본 파일을 못 찾음).
+// 그럴 때 깨진 이미지 아이콘 대신 상황을 알 수 있는 안내를 보여준다.
+function imgHtml(url, alt, style){
+  style = style || '';
+  if (url) return `<img src="${url}" alt="${esc(alt)}" loading="lazy" style="${style}">`;
+  return `<div class="imgMissing" style="${style}">🖼<span>이미지를 불러올 수 없어요</span></div>`;
+}
+
 function openWork(it){
   const b=document.getElementById('modal-box');
-  b.innerHTML=`<img src="${it.imageUrl}" alt="작품 ${it.workId}">
+  b.innerHTML=`${imgHtml(it.imageUrl, '작품 '+it.workId)}
     <p class="jua" style="font-size:19px; margin:14px 0 4px">“${esc(it.slogan)}”</p>
     <p class="muted">${esc(it.region)} · ${esc(it.assetName)}</p>
     <div class="sunk" style="margin:12px 0">${esc(it.designDesc)}</div>
-    <p class="muted">주요 대상: ${esc(it.target)}</p>
     <div class="right">
       <button onclick="closeModal(null,true)">닫기</button>
       ${it.isMine ? '<button disabled>내 작품이에요</button>'
@@ -671,7 +690,7 @@ async function loadRanking(){
     r.top.forEach(t=>{
       const d=document.createElement('div'); d.className='card center';
       d.innerHTML=`<p class="big">${medal[t.rank-1]}</p>
-        <img src="${t.imageUrl}" style="width:62%; border-radius:18px; background:#fff" alt="${t.rank}위 작품">
+        ${imgHtml(t.imageUrl, t.rank+'위 작품', 'width:62%; border-radius:18px; background:#fff')}
         <p class="jua" style="font-size:19px; margin:12px 0 2px">“${esc(t.slogan)}”</p>
         <p class="muted">${esc(t.region)}</p>`;
       box.appendChild(d);

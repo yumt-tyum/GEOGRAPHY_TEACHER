@@ -119,7 +119,13 @@ tr.clickable:hover{background:var(--paper-2);cursor:pointer}
         <h2 style="margin:0;font-size:18px">제출물 · 채점</h2>
         <div class="row">
           <select id="filter" style="width:auto" onchange="renderList()">
-            <option value="">전체</option><option value="미채점">미채점만</option><option value="AI추천">AI추천만</option><option value="확정">확정만</option>
+            <option value="">전체 반</option>
+          </select>
+          <select id="stateFilter" style="width:auto" onchange="renderList()">
+            <option value="">전체 상태</option>
+            <option value="미채점">미채점만</option>
+            <option value="AI추천">AI추천만</option>
+            <option value="확정">확정만</option>
           </select>
           <button onclick="gradeAll()" id="allBtn">미채점 전체 AI 채점</button>
         </div>
@@ -173,8 +179,15 @@ async function loadAll(){
   try{
     STATUS=(await api('adminStatus'));
     ROWS=(await api('adminList')).rows;
-    renderClassPhase(); renderPhase(); renderStatus(); renderList();
+    renderClassPhase(); renderPhase(); renderStatus(); renderFilterOptions(); renderList();
   }catch(e){ toast(e.message); }
+}
+
+function renderFilterOptions(){
+  const sel=document.getElementById('filter');
+  const cur=sel.value; // 새로고침돼도 고르고 있던 반 유지
+  sel.innerHTML='<option value="">전체 반</option>'+STATUS.classes.map(k=>`<option value="${k}">${k}반</option>`).join('');
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
 }
 
 function renderClassPhase(){
@@ -246,7 +259,9 @@ function tagFor(s){
 
 function renderList(){
   const f=document.getElementById('filter').value;
-  const rows=ROWS.filter(r=>!f||r.state===f);
+  const sf=document.getElementById('stateFilter').value;
+  const rows=ROWS.filter(r=>(!f||r.klass===f) && (!sf||r.state===sf));
+  document.getElementById('allBtn').textContent = f ? `${f}반 미채점 전체 AI 채점` : '미채점 전체 AI 채점';
   let html='<tr><th>학번</th><th>이름</th><th>반</th><th>지역</th><th>작품</th><th>득표</th><th>점수</th><th>상태</th></tr>';
   rows.forEach(r=>{
     html+=`<tr class="clickable" onclick="openDetail('${r.sid}')">
@@ -346,9 +361,10 @@ async function saveScore(sid){
 }
 
 async function gradeAll(){
-  const targets=ROWS.filter(r=>r.state==='미채점');
-  if(!targets.length) return toast('미채점 학생이 없습니다.');
-  if(!confirm(targets.length+'명을 AI 채점합니다. 시간이 걸립니다. 계속할까요?')) return;
+  const f=document.getElementById('filter').value;
+  const targets=ROWS.filter(r=>r.state==='미채점' && (!f||r.klass===f));
+  if(!targets.length) return toast((f?f+'반에 ':'')+'미채점 학생이 없습니다.');
+  if(!confirm((f?f+'반 ':'')+targets.length+'명을 AI 채점합니다. 시간이 걸립니다. 계속할까요?')) return;
   const b=document.getElementById('allBtn'); b.disabled=true;
   let ok=0, fail=0;
   for(let i=0;i<targets.length;i++){
@@ -356,7 +372,7 @@ async function gradeAll(){
     try{ await api('adminAiGrade',{sid:targets[i].sid,autoSave:true}); ok++; }
     catch(e){ fail++; }
   }
-  b.disabled=false; b.textContent='미채점 전체 AI 채점';
+  b.disabled=false;
   toast(`완료 ${ok}명 / 실패 ${fail}명`);
   loadAll();
 }

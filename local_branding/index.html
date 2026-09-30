@@ -169,6 +169,23 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
 
+/* 로그인 화면에서 학생용·선생님용을 확실히 갈라 보이게 하는 표시 */
+.roleTag{
+  display:inline-block; margin:0 0 10px; padding:3px 13px; border-radius:99px;
+  font-family:'Jua',sans-serif; font-size:13px; letter-spacing:-.01em;
+  background:var(--denim); color:#F3F8FC; box-shadow:0 2px 0 rgba(74,59,50,.18);
+}
+.roleTag.teacher{background:var(--red); color:#FFF6EC}
+.teacherCard{cursor:pointer; border:3px solid var(--red)}
+.orLine{
+  display:flex; align-items:center; gap:12px; margin:20px 2px;
+  color:var(--muted); font-family:'Jua',sans-serif; font-size:14px;
+}
+.orLine::before, .orLine::after{
+  content:''; flex:1; height:2px;
+  background:repeating-linear-gradient(90deg, var(--stitch) 0 6px, transparent 6px 11px);
+}
+
 /* 선택한 작품을 제출하는 띠 — 화면 맨 아래에 항상 붙어 있다 */
 #voteBar{
   position:fixed; left:50%; transform:translateX(-50%); bottom:10px;
@@ -311,9 +328,19 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 <!-- 로그인 -->
 <section id="s-login" class="wrap">
   <div class="card">
+    <p class="roleTag">학생</p>
     <label for="sid">학번 5자리<span class="hint">학년1 + 반2 + 번호2 (예: 30301)</span></label>
     <input id="sid" type="text" inputmode="numeric" maxlength="5" placeholder="30301" autocomplete="off">
-    <div class="right"><button class="ghost" onclick="goTeacherLogin()">선생님이신가요?</button><button class="primary" onclick="doLogin()">들어가기</button></div>
+    <div class="right"><span></span><button class="primary" onclick="doLogin()">들어가기</button></div>
+  </div>
+
+  <p class="orLine"><span>또는</span></p>
+
+  <div class="card teacherCard" onclick="goTeacherLogin()">
+    <p class="roleTag teacher">선생님</p>
+    <p class="jua" style="font-size:18px; margin:0 0 4px">선생님이신가요?</p>
+    <p class="muted" style="margin:0 0 14px">학번 없이, 교사 코드로 들어와 학생 작품에 투표하실 수 있어요.</p>
+    <button class="primary" style="width:100%" onclick="event.stopPropagation(); goTeacherLogin()">선생님으로 들어가기</button>
   </div>
 </section>
 

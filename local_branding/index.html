@@ -158,35 +158,49 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 .counter.ok{color:var(--green)}
 
 #toast{
-  position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(140%);
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+  opacity:0; visibility:hidden; pointer-events:none;
   background:var(--ink); color:#FFFDF6; padding:12px 20px; border-radius:14px;
   font-family:'Jua',sans-serif; font-size:15px; z-index:99; max-width:88vw; text-align:center;
   box-shadow:0 3px 0 rgba(74,59,50,.25), 0 8px 16px rgba(74,59,50,.2);
-  transition:transform .28s cubic-bezier(.2,.9,.3,1.2);
+  transition:transform .28s cubic-bezier(.2,.9,.3,1.2), opacity .22s ease, visibility .28s;
 }
-#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.show{transform:translateX(-50%) translateY(0); opacity:1; visibility:visible}
 
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
 
 /* 갤러리 작품 = 손으로 붙인 사진 */
 .work{background:#FFFDF6; border-radius:3px; padding:8px 8px 12px; text-align:center; cursor:pointer;
+  position:relative;
   box-shadow:0 3px 0 rgba(74,59,50,.10), 0 8px 16px rgba(74,59,50,.10)}
-.work:nth-child(odd){transform:rotate(-1.3deg)}
-.work:nth-child(even){transform:rotate(1.1deg)}
 .work:active{box-shadow:0 8px 16px rgba(74,59,50,.10)}
 .work img{width:100%; aspect-ratio:1; object-fit:contain; border-radius:3px;
   background:var(--paper-2) repeating-linear-gradient(45deg, rgba(201,169,138,.28) 0 8px, transparent 8px 16px)}
 .work .imgMissing{width:100%; aspect-ratio:1; border-radius:3px}
-.work .no{font-family:'Jua',sans-serif; font-size:13.5px; margin-top:8px; letter-spacing:-.01em}
-.work .sl{font-size:12.5px; color:var(--muted); min-height:32px}
+.work .no{font-family:'Jua',sans-serif; font-size:14px; margin-top:8px; letter-spacing:-.01em; line-height:1.35}
+.work .asset{font-size:12.5px; color:var(--muted); margin-top:2px}
+.work .sl{font-size:12.5px; color:var(--muted); min-height:32px; margin-top:4px}
 .work.mine{outline:3px dashed var(--red); outline-offset:-3px}
 
-/* 내가 투표한 작품 — 초록 실로 한 번 더 두른 느낌 */
-.work.voted{outline:3px solid var(--green); outline-offset:-3px; position:relative}
+/* 내가 투표한 작품 — 초록 띠를 두르고 모서리에 도장을 찍은 느낌 */
+.work.voted{
+  outline:4px solid var(--green); outline-offset:-4px;
+  background:#F3F8ED;
+  box-shadow:0 4px 0 rgba(74,59,50,.14), 0 10px 22px rgba(107,154,82,.35);
+}
 .work.voted .votedTag{
-  background:var(--green); color:#F5FBEF; font-family:'Jua',sans-serif; font-size:12px;
-  border-radius:99px; padding:2px 10px; display:inline-block; margin-top:8px;
-  box-shadow:0 2px 0 rgba(74,59,50,.18);
+  display:block; background:var(--green); color:#F5FBEF;
+  font-family:'Jua',sans-serif; font-size:13px; letter-spacing:-.01em;
+  margin:-8px -8px 8px; padding:6px 8px;
+}
+.work.voted .stamp{
+  position:absolute; top:-10px; right:-10px; z-index:2;
+  width:40px; height:40px; border-radius:50%;
+  background:var(--green); color:#F5FBEF;
+  display:flex; align-items:center; justify-content:center;
+  font-size:21px; font-weight:700;
+  border:3px solid #FBF3E2;
+  box-shadow:0 3px 8px rgba(74,59,50,.3);
 }
 
 /* 덮는 창 (투표 상세) */
@@ -197,6 +211,10 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 #modal img{width:100%; border-radius:3px; background:var(--paper-2); padding:8px 8px 18px;
   box-shadow:0 3px 0 rgba(74,59,50,.10), 0 8px 16px rgba(74,59,50,.12)}
 #modal .imgMissing{width:100%; aspect-ratio:1}
+#modal .votedBanner{
+  background:var(--green); color:#F5FBEF; font-family:'Jua',sans-serif; font-size:15px;
+  margin:-22px -22px 16px; padding:10px 16px; text-align:center;
+}
 
 /* 사진 없을 때 자리 표시 (사선 무늬) */
 .imgMissing{
@@ -844,17 +862,21 @@ async function loadGallery(){
     const r=await api('getGallery', authParams());
     ME.voted=r.voted;
     ME.myVote=r.myVote||'';
+    const chosenItem = r.items.find(x=>x.workId===ME.myVote);
     const who = ME.isTeacher ? `${ME.name} 선생님 · ` : `${ME.klass}반 ${ME.name} · `;
     document.getElementById('g-status').textContent =
-      who + (r.voted ? `${ME.myVote}에 투표했어요. 바꿀 수 없어요.` : '한 사람당 한 표, 바꿀 수 없어요.');
+      who + (r.voted
+        ? (chosenItem ? `‘${chosenItem.region} ${chosenItem.assetName}’에 투표했어요. 바꿀 수 없어요.` : '투표를 마쳤어요.')
+        : '한 사람당 한 표, 바꿀 수 없어요.');
     const g=document.getElementById('grid'); g.innerHTML='';
     r.items.forEach(it=>{
       const chosen = it.workId===ME.myVote;
       const d=document.createElement('div');
       d.className='work'+(it.isMine?' mine':'')+(chosen?' voted':'');
-      d.innerHTML=`${imgHtml(it.imageUrl, '작품 '+it.workId)}
-        ${chosen?'<div class="votedTag">내가 뽑은 작품</div>':''}
-        <div class="no">${it.workId}${it.isMine?' · 내 작품':''}</div>
+      d.innerHTML=`${chosen?'<div class="stamp">✓</div><div class="votedTag">내가 뽑은 작품</div>':''}
+        ${imgHtml(it.imageUrl, esc(it.region)+' '+esc(it.assetName))}
+        <div class="no">${esc(it.region)}${it.isMine?' · 내 작품':''}</div>
+        <div class="asset">${esc(it.assetName)}</div>
         <div class="sl">“${esc(it.slogan)}”</div>`;
       d.onclick=()=>openWork(it);
       g.appendChild(d);
@@ -877,15 +899,17 @@ function imgHtml(url, alt, style){
 }
 
 function openWork(it){
+  const chosen = it.workId===ME.myVote;
   const b=document.getElementById('modal-box');
-  b.innerHTML=`${imgHtml(it.imageUrl, '작품 '+it.workId)}
-    <p class="jua" style="font-size:19px; margin:14px 0 4px">“${esc(it.slogan)}”</p>
-    <p class="muted">${esc(it.region)} · ${esc(it.assetName)}</p>
+  b.innerHTML=`${chosen?'<p class="votedBanner">✓ 내가 뽑은 작품이에요</p>':''}
+    ${imgHtml(it.imageUrl, esc(it.region)+' '+esc(it.assetName))}
+    <p class="jua" style="font-size:20px; margin:14px 0 2px">${esc(it.region)} · ${esc(it.assetName)}</p>
+    <p class="jua" style="font-size:16px; margin:0 0 6px; color:var(--muted)">“${esc(it.slogan)}”</p>
     <div class="sunk" style="margin:12px 0">${esc(it.designDesc)}</div>
     <div class="right">
       <button onclick="closeModal(null,true)">닫기</button>
       ${it.isMine ? '<button disabled>내 작품이에요</button>'
-        : it.workId===ME.myVote ? '<button class="green" disabled>✓ 내가 뽑은 작품</button>'
+        : chosen ? '<button class="green" disabled>✓ 내가 뽑은 작품</button>'
         : ME.voted ? '<button disabled>이미 투표했어요</button>'
         : `<button class="primary" onclick="castVote('${it.workId}')">이 작품에 투표</button>`}
     </div>`;

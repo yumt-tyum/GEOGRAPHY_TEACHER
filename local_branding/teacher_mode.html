@@ -115,6 +115,19 @@ tr.clickable:hover{background:var(--paper-2);cursor:pointer}
       <div id="status" style="margin-top:12px"></div>
     </div>
 
+    <!-- 갤러리 이미지 최적화 -->
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0;font-size:18px">갤러리 이미지 줄이기</h2>
+        <button onclick="checkThumbs()">용량 확인</button>
+      </div>
+      <p class="muted" style="margin:6px 0 10px">투표 화면이 느리거나 “갤러리 준비 중” 오류가 뜨면 여기서 한 번 돌리세요. 갤러리에 쓰이는 작은 미리보기만 다시 만듭니다. <b>학생이 올린 원본 도안과 채점 자료는 그대로입니다.</b></p>
+      <div class="row">
+        <button class="primary" onclick="shrinkThumbs()" id="shrinkBtn">미리보기 줄이기 시작</button>
+      </div>
+      <div id="thumbBox" style="margin-top:12px"></div>
+    </div>
+
     <!-- 교사 투표 -->
     <div class="card">
       <div class="row" style="justify-content:space-between">
@@ -205,6 +218,77 @@ async function loadAll(){
     renderClassPhase(); renderPhase(); renderStatus(); renderFilterOptions(); renderList();
     loadTeacherVotes();
   }catch(e){ toast(e.message); }
+}
+
+/* --- 갤러리 이미지 줄이기 ---
+   시트에 저장된 미리보기를 몇 개씩 가져와 브라우저에서 작게 다시 만들고 돌려보낸다.
+   갤러리 응답 용량을 줄이는 게 목적이라, 원본 도안 파일은 손대지 않는다. */
+const THUMB_SIDE=200, THUMB_Q=0.55, THUMB_MAX=9000;
+
+async function checkThumbs(){
+  const box=document.getElementById('thumbBox');
+  box.innerHTML='<p class="muted">확인 중…</p>';
+  try{
+    const r=await api('adminThumbList');
+    const big=r.rows.filter(x=>x.len>THUMB_MAX).length;
+    const none=r.rows.filter(x=>!x.hasThumb).length;
+    box.innerHTML=`<div class="field"><b>현재 상태</b>`
+      + `투표 대상 작품 ${r.rows.length}개 · 미리보기 총 ${r.totalKB}KB\n`
+      + `줄일 필요가 있는 것: ${big}개` + (none?` · 미리보기가 아예 없는 것: ${none}개`:'')
+      + `\n\n갤러리는 이 용량을 한 번에 보냅니다. 1000KB를 넘으면 느리거나 실패할 수 있어요.</div>`;
+  }catch(e){ box.innerHTML='<p class="muted">'+esc(e.message)+'</p>'; }
+}
+
+// dataURL 한 장을 작게 다시 만든다
+function shrinkOne(dataUrl){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1, THUMB_SIDE/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.width*sc));
+      c.height=Math.max(1,Math.round(img.height*sc));
+      const ctx=c.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);   // 투명 배경은 흰색으로
+      ctx.drawImage(img,0,0,c.width,c.height);
+      let q=THUMB_Q, out=c.toDataURL('image/jpeg',q);
+      while(out.length>THUMB_MAX && q>0.25){ q-=0.1; out=c.toDataURL('image/jpeg',q); }
+      resolve(out.length<=THUMB_MAX*1.5 ? out : null);
+    };
+    img.onerror=()=>resolve(null);
+    img.src=dataUrl;
+  });
+}
+
+async function shrinkThumbs(){
+  const btn=document.getElementById('shrinkBtn');
+  const box=document.getElementById('thumbBox');
+  btn.disabled=true;
+  try{
+    const list=(await api('adminThumbList')).rows;
+    if(!list.length){ box.innerHTML='<p class="muted">대상이 없습니다.</p>'; return; }
+    let done=0, changed=0, failed=0;
+    const BATCH=4;
+    for(let i=0;i<list.length;i+=BATCH){
+      const rows=list.slice(i,i+BATCH).map(x=>x.row);
+      btn.textContent=`줄이는 중 ${done}/${list.length}`;
+      try{
+        const got=(await api('adminGetThumbs',{rows})).items;
+        const items=[];
+        for(const it of got){
+          const small=it.dataUrl ? await shrinkOne(it.dataUrl) : null;
+          if(small) items.push({row:it.row, dataUrl:small}); else failed++;
+        }
+        if(items.length){ await api('adminSetThumbs',{items}); changed+=items.length; }
+      }catch(e){ failed+=rows.length; }
+      done+=rows.length;
+      box.innerHTML=`<div class="field"><b>진행 중</b>${done}/${list.length} 처리 · ${changed}개 줄임${failed?` · ${failed}개 실패`:''}</div>`;
+    }
+    box.innerHTML=`<div class="field"><b>완료</b>${changed}개의 미리보기를 줄였습니다.${failed?` (${failed}개는 건너뜀)`:''}\n투표 화면을 새로고침해서 확인해 보세요.</div>`;
+    toast('미리보기를 줄였습니다.');
+    checkThumbs();
+  }catch(e){ toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent='미리보기 줄이기 시작'; }
 }
 
 /* --- 선생님 투표 --- */

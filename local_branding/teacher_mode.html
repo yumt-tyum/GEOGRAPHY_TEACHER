@@ -299,9 +299,10 @@ async function loadTeacherVotes(){
     document.getElementById('tvCode').value=r.code||'';
     document.getElementById('tvWeight').value=r.weight||1;
 
-    const list = r.voters.length
-      ? r.voters.map(v=>`${esc(v.name)} → ${esc(v.workId)}${v.region?' ('+esc(v.region)+')':''}`).join(' / ')
-      : '아직 투표한 선생님이 없습니다.';
+    // 제출까지 마친 분과 고르기만 한 분을 갈라서 보여준다.
+    const done = r.voters.filter(v=>!v.pending);
+    const pend = r.voters.filter(v=>v.pending);
+    const fmt = v=>`${esc(v.name)} → ${esc(v.workId)}${v.region?' ('+esc(v.region)+')':''}`;
 
     const rankTable = (title, rows) => {
       if(!rows.length) return `<div class="field"><b>${title}</b>아직 표가 없습니다.</div>`;
@@ -309,7 +310,10 @@ async function loadTeacherVotes(){
     };
 
     box.innerHTML =
-      `<div class="field"><b>투표한 선생님 ${r.voters.length}명</b>${esc(list)}</div>`
+      `<div class="field"><b>제출 완료 ${done.length}명 · 집계에 반영됨</b>${done.length?done.map(fmt).join(' / '):'아직 없습니다.'}</div>`
+      + (pend.length
+          ? `<div class="field" style="border:2px solid var(--red)"><b>⚠ 고르기만 하고 제출 안 함 ${pend.length}명 · 집계 안 됨</b>${pend.map(fmt).join(' / ')}\n\n이 선생님들께 “화면 아래 초록색 제출하기 버튼까지 눌러야 반영된다”고 알려주세요.</div>`
+          : '')
       + `<div class="split" style="margin-top:4px">`
       + rankTable('선생님 표만 (상위 5)', r.teacherTop)
       + rankTable('학생 표만 (상위 5)', r.studentTop)
@@ -386,15 +390,20 @@ function renderPhase(){
 
 function renderStatus(){
   const c=STATUS.byClass;
-  let html='<table><tr><th>반</th><th>지역 배정</th><th>제출</th><th>투표</th></tr>';
+  let html='<table><tr><th>반</th><th>지역 배정</th><th>제출</th><th>투표 완료</th><th>고르기만 함</th></tr>';
   Object.keys(c).sort().forEach(k=>{
-    html+=`<tr><td>${esc(k)}</td><td>${c[k].assigned} / ${c[k].total}</td><td>${c[k].submitted} / ${c[k].total}</td><td>${c[k].voted} / ${c[k].total}</td></tr>`;
+    const p=c[k].pending||0;
+    html+=`<tr><td>${esc(k)}</td><td>${c[k].assigned} / ${c[k].total}</td><td>${c[k].submitted} / ${c[k].total}</td>`
+       +`<td>${c[k].voted} / ${c[k].total}</td>`
+       +`<td>${p?`<span class="tag none">${p}명</span>`:'–'}</td></tr>`;
   });
   html+='</table>';
   html+=`<p class="muted" style="margin-top:10px">
     지역 ${STATUS.regionsUsed} / ${STATUS.totalRegions}개 배정됨 (${STATUS.regionScope==='class'?'반별 중복 허용':'전체 중복 없음'})
     · 총 제출 ${STATUS.totalSubmitted} / ${STATUS.totalStudents}명</p>`;
   if(STATUS.noSubmit.length) html+=`<div class="field"><b>미제출 ${STATUS.noSubmit.length}명</b>${esc(STATUS.noSubmit.join(' / '))}</div>`;
+  const pv=STATUS.pendingVote||[];
+  if(pv.length) html+=`<div class="field" style="border:2px solid var(--red)"><b>⚠ 작품은 골랐지만 제출 안 함 ${pv.length}명 · 집계 안 됨</b>${esc(pv.join(' / '))}\n\n화면 아래 초록색 “제출하기” 버튼까지 눌러야 표로 반영된다고 안내해 주세요.</div>`;
   if(STATUS.phase==='vote'&&STATUS.noVote.length) html+=`<div class="field"><b>미투표 ${STATUS.noVote.length}명</b>${esc(STATUS.noVote.join(' / '))}</div>`;
   document.getElementById('status').innerHTML=html;
 }

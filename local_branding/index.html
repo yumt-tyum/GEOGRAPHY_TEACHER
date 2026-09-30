@@ -240,7 +240,24 @@ button[disabled]{opacity:.45; cursor:not-allowed}
   <div class="card">
     <label for="sid">학번 5자리<span class="hint">학년1 + 반2 + 번호2 (예: 30301)</span></label>
     <input id="sid" type="text" inputmode="numeric" maxlength="5" placeholder="30301" autocomplete="off">
-    <div class="right"><span></span><button class="primary" onclick="doLogin()">들어가기</button></div>
+    <div class="right"><button class="ghost" onclick="show('s-tlogin')">선생님이신가요?</button><button class="primary" onclick="doLogin()">들어가기</button></div>
+  </div>
+</section>
+
+<!-- 교사 투표 로그인 -->
+<section id="s-tlogin" class="wrap hidden">
+  <div class="card">
+    <p class="jua" style="font-size:19px; margin:0 0 4px">선생님 투표</p>
+    <p class="muted" style="margin:0">학생 작품을 둘러보고 한 표 주실 수 있어요.</p>
+
+    <label for="tcode">교사 코드</label>
+    <input id="tcode" type="text" placeholder="안내받은 코드" autocomplete="off">
+
+    <label for="tname">선생님 이름<span class="hint">중복 투표를 막는 용도예요</span></label>
+    <input id="tname" type="text" maxlength="20" placeholder="예: 염승희" autocomplete="off">
+
+    <p class="muted" style="margin:12px 0 0">이름은 학생에게 공개되지 않아요.</p>
+    <div class="right"><button onclick="show('s-login')">뒤로</button><button class="primary" onclick="doTeacherLogin()">투표하러 가기</button></div>
   </div>
 </section>
 
@@ -423,9 +440,15 @@ function toast(msg){
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200);
 }
 function show(id){
-  ['s-login','s-gate','s-draw','s-form','s-done','s-gallery','s-rank']
+  ['s-login','s-tlogin','s-gate','s-draw','s-form','s-done','s-gallery','s-rank']
     .forEach(s=>document.getElementById(s).classList.toggle('hidden', s!==id));
   window.scrollTo(0,0);
+}
+
+/* 투표·갤러리 요청에 실어 보낼 신원 정보.
+   학생은 학번, 교사는 코드+이름으로 매번 신원을 확인받는다. */
+function authParams(){
+  return ME && ME.isTeacher ? {tCode:ME.tCode, tName:ME.name} : {sid:ME.sid};
 }
 
 /* --- 로그인 --- */
@@ -442,14 +465,33 @@ async function doLogin(){
   }catch(e){ toast(e.message); }
 }
 
+/* --- 교사 투표 로그인 --- */
+async function doTeacherLogin(){
+  const tCode=document.getElementById('tcode').value.trim();
+  const tName=document.getElementById('tname').value.trim();
+  if(!tCode) return toast('교사 코드를 입력해 주세요.');
+  if(!tName) return toast('이름을 입력해 주세요.');
+  try{
+    const r=await api('teacherLogin',{tCode, tName});
+    ME={isTeacher:true, tCode, name:r.name, voted:r.voted};
+    PHASE=r.phase;
+    if(PHASE==='vote') loadGallery();
+    else if(PHASE==='result') loadRanking();
+    else gate('투표가 끝났어요','참여해 주셔서 감사합니다.');
+    startPolling();
+  }catch(e){ toast(e.message); }
+}
+
 /* 제출 화면이 떠 있는 동안 30초마다 내 반 단계를 확인해서, 선생님이 잠그면 즉시 화면을 덮는다 */
 function startPolling(){
   clearInterval(POLL);
   POLL=setInterval(async ()=>{
     if(!ME) return;
     try{
-      const r=await api('getConfig',{sid:ME.sid});
+      // 교사는 학생 명단에 없으므로 학번 없이 전체 단계만 확인한다.
+      const r=await api('getConfig', ME.isTeacher ? {} : {sid:ME.sid});
       PHASE=r.phase;
+      if(ME.isTeacher) return;
       const onFormScreens = !document.getElementById('s-form').classList.contains('hidden')
                           || !document.getElementById('s-draw').classList.contains('hidden');
       document.getElementById('lockOverlay').classList.toggle('show', PHASE==='locked' && onFormScreens);
@@ -764,10 +806,11 @@ async function showDone(){
 /* --- 갤러리 · 투표 --- */
 async function loadGallery(){
   try{
-    const r=await api('getGallery',{sid:ME.sid});
-    console.log('[갤러리 응답]', r.items.map(it=>({workId:it.workId, imageUrl_길이: it.imageUrl?it.imageUrl.length+'자':'(비어있음)'})));
+    const r=await api('getGallery', authParams());
     ME.voted=r.voted;
-    document.getElementById('g-status').textContent = r.voted ? '투표를 마쳤어요. 다른 작품도 구경해 보세요.' : '한 사람당 한 표, 바꿀 수 없어요.';
+    const who = ME.isTeacher ? `${ME.name} 선생님 · ` : '';
+    document.getElementById('g-status').textContent =
+      who + (r.voted ? '투표를 마쳤어요. 다른 작품도 구경해 보세요.' : '한 사람당 한 표, 바꿀 수 없어요.');
     const g=document.getElementById('grid'); g.innerHTML='';
     r.items.forEach(it=>{
       const d=document.createElement('div');
@@ -809,7 +852,7 @@ function openWork(it){
 function closeModal(ev,force){ if(force||ev.target.id==='modal') document.getElementById('modal').classList.remove('show'); }
 
 async function castVote(workId){
-  try{ await api('vote',{sid:ME.sid, workId}); toast('투표했어요!'); closeModal(null,true); loadGallery(); }
+  try{ await api('vote', Object.assign(authParams(), {workId})); toast('투표했어요!'); closeModal(null,true); loadGallery(); }
   catch(e){ toast(e.message); }
 }
 
@@ -838,6 +881,8 @@ document.getElementById('formation').addEventListener('input',e=>{
   c.classList.toggle('ok', n>=200);
 });
 document.getElementById('sid').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('tcode').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('tname').focus(); });
+document.getElementById('tname').addEventListener('keydown',e=>{ if(e.key==='Enter') doTeacherLogin(); });
 document.getElementById('s-form').addEventListener('input', scheduleDraftSave);
 document.getElementById('s-form').addEventListener('change', scheduleDraftSave);
 (function(){ const s=sessionStorage.getItem('sid'); if(s){ document.getElementById('sid').value=s; doLogin(); } })();

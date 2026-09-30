@@ -169,15 +169,19 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
 
-/* 선택한 작품을 제출하는 띠 — 화면 아래에 계속 붙어 있어 어디서든 누를 수 있다 */
+/* 선택한 작품을 제출하는 띠 — 화면 맨 아래에 항상 붙어 있다 */
 #voteBar{
-  position:sticky; bottom:12px; z-index:40; margin:0 0 14px;
+  position:fixed; left:50%; transform:translateX(-50%); bottom:10px;
+  width:min(680px, calc(100% - 34px)); z-index:60;
   background:var(--green); color:#F5FBEF; border-radius:16px;
-  padding:12px 16px; text-align:center;
-  box-shadow:0 4px 0 rgba(74,59,50,.22), 0 10px 22px rgba(74,59,50,.25);
+  padding:10px 14px; text-align:center;
+  box-shadow:0 4px 0 rgba(74,59,50,.22), 0 10px 22px rgba(74,59,50,.3);
 }
-#voteBar p{margin:0 0 8px; font-family:'Jua',sans-serif; font-size:15px; letter-spacing:-.01em}
+#voteBar.empty{background:var(--paper-2); color:var(--muted)}
+#voteBar p{margin:0 0 7px; font-family:'Jua',sans-serif; font-size:14.5px; letter-spacing:-.01em}
 #voteBar button{width:100%}
+/* 제출 띠에 마지막 줄이 가리지 않도록 갤러리 아래에 여백을 준다 */
+#s-gallery{padding-bottom:104px}
 
 /* 갤러리 작품 = 손으로 붙인 사진 */
 .work{background:#FFFDF6; border-radius:3px; padding:8px 8px 12px; text-align:center; cursor:pointer;
@@ -187,6 +191,17 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 .work img{width:100%; aspect-ratio:1; object-fit:contain; border-radius:3px;
   background:var(--paper-2) repeating-linear-gradient(45deg, rgba(201,169,138,.28) 0 8px, transparent 8px 16px)}
 .work .imgMissing{width:100%; aspect-ratio:1; border-radius:3px}
+
+/* 이미지가 도착하기 전 자리 — 천이 부드럽게 반짝이는 느낌 */
+.work .imgSlot{width:100%; aspect-ratio:1; object-fit:contain; border-radius:3px; display:block;
+  background:var(--paper-2) repeating-linear-gradient(45deg, rgba(201,169,138,.28) 0 8px, transparent 8px 16px)}
+.work .imgSlot.loading, #modal .imgSlot.loading{
+  background:linear-gradient(100deg, var(--paper-2) 30%, #FFFDF6 50%, var(--paper-2) 70%);
+  background-size:220% 100%;
+  animation:shimmer 1.3s linear infinite;
+}
+@keyframes shimmer{ from{background-position:180% 0} to{background-position:-40% 0} }
+@media (prefers-reduced-motion:reduce){ .work .imgSlot.loading{animation:none} }
 .work .no{font-family:'Jua',sans-serif; font-size:14px; margin-top:8px; letter-spacing:-.01em; line-height:1.35}
 .work .asset{font-size:12.5px; color:var(--muted); margin-top:2px}
 .work .sl{font-size:12.5px; color:var(--muted); min-height:32px; margin-top:4px}
@@ -893,55 +908,90 @@ async function showDone(){
 }
 
 /* --- 갤러리 · 투표 --- */
-async function loadGallery(opts){
+/* 갤러리 목록은 한 번에 받아서 그린다.
+   선택을 바꿀 때는 다시 받지 않고 화면만 다시 그려서(renderGallery) 즉시 반응하게 한다. */
+let GALLERY=[];
+
+async function loadGallery(){
+  const st=document.getElementById('g-status');
   try{
+    if(st) st.textContent='작품을 불러오는 중이에요…';
+    const t0=Date.now();
     const r=await api('getGallery', authParams());
+    console.log('[갤러리 로딩]', ((Date.now()-t0)/1000).toFixed(1)+'초', r.items.length+'개');
+    GALLERY=r.items;
     ME.voted=r.voted;
     ME.myVote=r.myVote||'';
     ME.confirmed=!!r.confirmed;
-    const chosenItem = r.items.find(x=>x.workId===ME.myVote);
-    const label = chosenItem ? `${chosenItem.region} ${chosenItem.assetName}` : '';
-    const who = ME.isTeacher ? `${ME.name} 선생님 · ` : `${ME.klass}반 ${ME.name} · `;
-
-    document.getElementById('g-status').textContent = who + (
-      ME.confirmed ? (label ? `‘${label}’에 투표했어요. 바꿀 수 없어요.` : '투표를 마쳤어요.')
-      : ME.myVote  ? '아직 제출 전이에요. 다른 작품으로 바꿀 수 있어요.'
-      : '작품을 하나 골라 주세요. 제출 전까지는 몇 번이든 바꿀 수 있어요.');
-
-    // 선택은 했지만 아직 제출 안 한 상태에서만 제출 띠를 띄운다.
-    const bar=document.getElementById('voteBar');
-    if(ME.myVote && !ME.confirmed){
-      document.getElementById('voteBarText').textContent=`‘${label}’ 선택됨`;
-      bar.classList.remove('hidden');
-    } else {
-      bar.classList.add('hidden');
-    }
-
-    const g=document.getElementById('grid'); g.innerHTML='';
-    r.items.forEach(it=>{
-      const chosen = it.workId===ME.myVote;
-      const d=document.createElement('div');
-      d.className='work'+(it.isMine?' mine':'')+(chosen?(ME.confirmed?' voted':' picked'):'');
-      const tag = chosen
-        ? (ME.confirmed
-            ? '<div class="stamp">✓</div><div class="votedTag">내가 뽑은 작품</div>'
-            : '<div class="stamp pick">✓</div><div class="votedTag pick">선택함 · 제출 전</div>')
-        : '';
-      d.innerHTML=`${tag}
-        ${imgHtml(it.imageUrl, esc(it.region)+' '+esc(it.assetName))}
-        <div class="no">${esc(it.region)}${it.isMine?' · 내 작품':''}</div>
-        <div class="asset">${esc(it.assetName)}</div>
-        <div class="sl">“${esc(it.slogan)}”</div>`;
-      d.onclick=()=>openWork(it);
-      g.appendChild(d);
-    });
+    renderGallery();
     show('s-gallery');
-    // 처음 들어올 때만 내가 고른 작품으로 스크롤한다. 선택을 바꾸는 중에는 화면이 튀지 않도록.
-    if(!opts || !opts.keepScroll){
-      const mark=g.querySelector('.work.voted, .work.picked');
-      if(mark) mark.scrollIntoView({block:'center', behavior:'smooth'});
-    }
   }catch(e){ gate('갤러리 준비 중', e.message); }
+}
+
+// 통신 없이 지금 상태대로 다시 그린다.
+/* 갤러리 전체를 그린다. 카드마다 이미지 데이터가 크기 때문에 이 함수는 무겁다.
+   그래서 갤러리를 처음 열 때만 부르고, 선택을 바꿀 때는 markPick()으로 해당 카드만 손댄다. */
+function renderGallery(){
+  const g=document.getElementById('grid'); g.innerHTML='';
+  GALLERY.forEach(it=>{
+    const d=document.createElement('div');
+    d.className='work'+(it.isMine?' mine':'');
+    d.dataset.work=it.workId;
+    const pic = it.imageUrl
+      ? `<img class="imgSlot" src="${it.imageUrl}" alt="${esc(it.region)} ${esc(it.assetName)}" loading="lazy">`
+      : `<div class="imgSlot loading"></div>`;
+    d.innerHTML=`${pic}
+      <div class="no">${esc(it.region)}${it.isMine?' · 내 작품':''}</div>
+      <div class="asset">${esc(it.assetName)}</div>
+      <div class="sl">“${esc(it.slogan)}”</div>`;
+    d.onclick=()=>openWork(it);
+    g.appendChild(d);
+  });
+  if(ME.myVote) markPick(ME.myVote);   // 이미 고른 게 있으면 표시만 얹는다
+  updateVoteBar();
+}
+
+/* 선택 표시를 옮긴다. 전체를 다시 그리지 않고 해당 카드 두 장만 손대서 즉시 반응한다. */
+function markPick(workId){
+  document.querySelectorAll('.work.picked, .work.voted').forEach(el=>{
+    el.classList.remove('picked','voted');
+    const s=el.querySelector('.stamp'); if(s) s.remove();
+    const t=el.querySelector('.votedTag'); if(t) t.remove();
+  });
+  if(!workId) return;
+  const el=document.querySelector('.work[data-work="'+workId+'"]');
+  if(!el) return;
+  el.classList.add(ME.confirmed ? 'voted' : 'picked');
+  el.insertAdjacentHTML('afterbegin', ME.confirmed
+    ? '<div class="stamp">✓</div><div class="votedTag">내가 뽑은 작품</div>'
+    : '<div class="stamp pick">✓</div><div class="votedTag pick">선택함 · 제출 전</div>');
+}
+
+/* 화면 아래 고정된 제출 띠와 상단 안내 문구를 지금 상태에 맞춘다. */
+function updateVoteBar(){
+  const chosenItem = GALLERY.find(x=>x.workId===ME.myVote);
+  const label = chosenItem ? `${chosenItem.region} ${chosenItem.assetName}` : '';
+  const who = ME.isTeacher ? `${ME.name} 선생님 · ` : `${ME.klass}반 ${ME.name} · `;
+
+  document.getElementById('g-status').textContent = who + (
+    ME.confirmed ? (label ? `‘${label}’에 투표했어요. 바꿀 수 없어요.` : '투표를 마쳤어요.')
+    : ME.myVote  ? '아직 제출 전이에요. 다른 작품으로 바꿀 수 있어요.'
+    : '작품을 하나 골라 주세요.');
+
+  const bar=document.getElementById('voteBar');
+  const txt=document.getElementById('voteBarText');
+  const btn=document.getElementById('voteBarBtn');
+  if(ME.confirmed){ bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  if(ME.myVote){
+    bar.classList.remove('empty');
+    txt.textContent=`‘${label}’ 선택됨`;
+    btn.disabled=false;
+  } else {
+    bar.classList.add('empty');
+    txt.textContent='아직 고른 작품이 없어요';
+    btn.disabled=true;
+  }
 }
 function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -969,7 +1019,7 @@ function openWork(it){
     :                `<button class="primary" onclick="castVote('${it.workId}')">${ME.myVote?'이 작품으로 바꾸기':'이 작품 선택'}</button>`;
 
   b.innerHTML=`${banner}
-    ${imgHtml(it.imageUrl, esc(it.region)+' '+esc(it.assetName))}
+    ${it.imageUrl ? imgHtml(it.imageUrl, esc(it.region)+' '+esc(it.assetName)) : '<div class="imgSlot loading" style="width:100%; aspect-ratio:1; border-radius:3px"></div>'}
     <p class="jua" style="font-size:20px; margin:14px 0 2px">${esc(it.region)} · ${esc(it.assetName)}</p>
     <p class="jua" style="font-size:16px; margin:0 0 6px; color:var(--muted)">“${esc(it.slogan)}”</p>
     <div class="sunk" style="margin:12px 0">${esc(it.designDesc)}</div>
@@ -981,14 +1031,18 @@ function openWork(it){
 }
 function closeModal(ev,force){ if(force||ev.target.id==='modal') document.getElementById('modal').classList.remove('show'); }
 
-/* 작품 선택 — 아직 제출이 아니라서 몇 번이든 다시 고를 수 있다. */
+/* 작품 선택 — 아직 제출이 아니라서 몇 번이든 다시 고를 수 있다.
+   해당 카드 표시만 옮기고 전체를 다시 그리지 않아서, 누르는 즉시 반응한다. */
 async function castVote(workId){
+  const prev=ME.myVote;
+  ME.myVote=workId;      // 먼저 화면부터 바꿔서 기다림이 느껴지지 않게 한다
+  markPick(workId); updateVoteBar(); closeModal(null,true);
   try{
     await api('vote', Object.assign(authParams(), {workId}));
-    toast('선택했어요. 아래 “제출하기”를 눌러야 확정돼요.');
-    closeModal(null,true);
-    loadGallery({keepScroll:true});
-  }catch(e){ toast(e.message); }
+  }catch(e){
+    ME.myVote=prev; markPick(prev); updateVoteBar();   // 실패하면 되돌린다
+    toast(e.message);
+  }
 }
 
 /* 선택한 작품으로 최종 제출 — 이 뒤로는 못 바꾼다. */
@@ -999,9 +1053,10 @@ async function confirmVote(){
   if(btn){ btn.disabled=true; btn.textContent='제출 중…'; }
   try{
     await api('confirmVote', authParams());
+    ME.confirmed=true; ME.voted=true;
+    markPick(ME.myVote); updateVoteBar();
     toast('투표를 제출했어요!');
     closeModal(null,true);
-    loadGallery();
   }catch(e){ toast(e.message); }
   finally{ if(btn){ btn.disabled=false; btn.textContent='이 작품으로 제출하기'; } }
 }

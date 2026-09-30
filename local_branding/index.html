@@ -169,6 +169,16 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px}
 
+/* 선택한 작품을 제출하는 띠 — 화면 아래에 계속 붙어 있어 어디서든 누를 수 있다 */
+#voteBar{
+  position:sticky; bottom:12px; z-index:40; margin:0 0 14px;
+  background:var(--green); color:#F5FBEF; border-radius:16px;
+  padding:12px 16px; text-align:center;
+  box-shadow:0 4px 0 rgba(74,59,50,.22), 0 10px 22px rgba(74,59,50,.25);
+}
+#voteBar p{margin:0 0 8px; font-family:'Jua',sans-serif; font-size:15px; letter-spacing:-.01em}
+#voteBar button{width:100%}
+
 /* 갤러리 작품 = 손으로 붙인 사진 */
 .work{background:#FFFDF6; border-radius:3px; padding:8px 8px 12px; text-align:center; cursor:pointer;
   position:relative;
@@ -203,6 +213,27 @@ button[disabled]{opacity:.45; cursor:not-allowed}
   box-shadow:0 3px 8px rgba(74,59,50,.3);
 }
 
+/* 선택만 해둔 상태(아직 제출 전) — 확정된 초록과 구분되는 겨자색 */
+.work.picked{
+  outline:4px dashed var(--mustard); outline-offset:-4px;
+  background:#FDF6E6;
+  box-shadow:0 4px 0 rgba(74,59,50,.14), 0 10px 22px rgba(224,169,58,.35);
+}
+.work.picked .votedTag{
+  display:block; background:var(--mustard); color:#3A2C10;
+  font-family:'Jua',sans-serif; font-size:13px; letter-spacing:-.01em;
+  margin:-8px -8px 8px; padding:6px 8px;
+}
+.work.picked .stamp{
+  position:absolute; top:-10px; right:-10px; z-index:2;
+  width:40px; height:40px; border-radius:50%;
+  background:var(--mustard); color:#3A2C10;
+  display:flex; align-items:center; justify-content:center;
+  font-size:21px; font-weight:700;
+  border:3px solid #FBF3E2;
+  box-shadow:0 3px 8px rgba(74,59,50,.3);
+}
+
 /* 덮는 창 (투표 상세) */
 #modal{position:fixed; inset:0; background:rgba(46,38,32,.86); display:none; align-items:center; justify-content:center; padding:18px; z-index:80}
 #modal.show{display:flex}
@@ -215,6 +246,7 @@ button[disabled]{opacity:.45; cursor:not-allowed}
   background:var(--green); color:#F5FBEF; font-family:'Jua',sans-serif; font-size:15px;
   margin:-22px -22px 16px; padding:10px 16px; text-align:center;
 }
+#modal .votedBanner.pick{background:var(--mustard); color:#3A2C10}
 
 /* 사진 없을 때 자리 표시 (사선 무늬) */
 .imgMissing{
@@ -413,8 +445,12 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 <section id="s-gallery" class="wrap hidden">
   <div class="card tight center">
     <p class="jua" style="font-size:20px; margin:0">마음에 드는 작품에 한 표</p>
-    <p class="muted" id="g-status">한 사람당 한 표, 바꿀 수 없어요.</p>
+    <p class="muted" id="g-status">한 사람당 한 표예요.</p>
     <button class="ghost" onclick="resetSession()">내가 아니에요 · 처음으로</button>
+  </div>
+  <div id="voteBar" class="hidden">
+    <p id="voteBarText"></p>
+    <button class="primary" onclick="confirmVote()" id="voteBarBtn">이 작품으로 제출하기</button>
   </div>
   <div class="grid" id="grid"></div>
 </section>
@@ -857,23 +893,41 @@ async function showDone(){
 }
 
 /* --- 갤러리 · 투표 --- */
-async function loadGallery(){
+async function loadGallery(opts){
   try{
     const r=await api('getGallery', authParams());
     ME.voted=r.voted;
     ME.myVote=r.myVote||'';
+    ME.confirmed=!!r.confirmed;
     const chosenItem = r.items.find(x=>x.workId===ME.myVote);
+    const label = chosenItem ? `${chosenItem.region} ${chosenItem.assetName}` : '';
     const who = ME.isTeacher ? `${ME.name} 선생님 · ` : `${ME.klass}반 ${ME.name} · `;
-    document.getElementById('g-status').textContent =
-      who + (r.voted
-        ? (chosenItem ? `‘${chosenItem.region} ${chosenItem.assetName}’에 투표했어요. 바꿀 수 없어요.` : '투표를 마쳤어요.')
-        : '한 사람당 한 표, 바꿀 수 없어요.');
+
+    document.getElementById('g-status').textContent = who + (
+      ME.confirmed ? (label ? `‘${label}’에 투표했어요. 바꿀 수 없어요.` : '투표를 마쳤어요.')
+      : ME.myVote  ? '아직 제출 전이에요. 다른 작품으로 바꿀 수 있어요.'
+      : '작품을 하나 골라 주세요. 제출 전까지는 몇 번이든 바꿀 수 있어요.');
+
+    // 선택은 했지만 아직 제출 안 한 상태에서만 제출 띠를 띄운다.
+    const bar=document.getElementById('voteBar');
+    if(ME.myVote && !ME.confirmed){
+      document.getElementById('voteBarText').textContent=`‘${label}’ 선택됨`;
+      bar.classList.remove('hidden');
+    } else {
+      bar.classList.add('hidden');
+    }
+
     const g=document.getElementById('grid'); g.innerHTML='';
     r.items.forEach(it=>{
       const chosen = it.workId===ME.myVote;
       const d=document.createElement('div');
-      d.className='work'+(it.isMine?' mine':'')+(chosen?' voted':'');
-      d.innerHTML=`${chosen?'<div class="stamp">✓</div><div class="votedTag">내가 뽑은 작품</div>':''}
+      d.className='work'+(it.isMine?' mine':'')+(chosen?(ME.confirmed?' voted':' picked'):'');
+      const tag = chosen
+        ? (ME.confirmed
+            ? '<div class="stamp">✓</div><div class="votedTag">내가 뽑은 작품</div>'
+            : '<div class="stamp pick">✓</div><div class="votedTag pick">선택함 · 제출 전</div>')
+        : '';
+      d.innerHTML=`${tag}
         ${imgHtml(it.imageUrl, esc(it.region)+' '+esc(it.assetName))}
         <div class="no">${esc(it.region)}${it.isMine?' · 내 작품':''}</div>
         <div class="asset">${esc(it.assetName)}</div>
@@ -881,10 +935,12 @@ async function loadGallery(){
       d.onclick=()=>openWork(it);
       g.appendChild(d);
     });
-    // 내가 투표한 작품이 한눈에 들어오도록 맨 위로 스크롤해 보여준다.
-    const mark=g.querySelector('.work.voted');
-    if(mark) mark.scrollIntoView({block:'center', behavior:'smooth'});
     show('s-gallery');
+    // 처음 들어올 때만 내가 고른 작품으로 스크롤한다. 선택을 바꾸는 중에는 화면이 튀지 않도록.
+    if(!opts || !opts.keepScroll){
+      const mark=g.querySelector('.work.voted, .work.picked');
+      if(mark) mark.scrollIntoView({block:'center', behavior:'smooth'});
+    }
   }catch(e){ gate('갤러리 준비 중', e.message); }
 }
 function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -901,25 +957,53 @@ function imgHtml(url, alt, style){
 function openWork(it){
   const chosen = it.workId===ME.myVote;
   const b=document.getElementById('modal-box');
-  b.innerHTML=`${chosen?'<p class="votedBanner">✓ 내가 뽑은 작품이에요</p>':''}
+  const banner = chosen
+    ? (ME.confirmed ? '<p class="votedBanner">✓ 내가 뽑은 작품이에요</p>'
+                    : '<p class="votedBanner pick">✓ 선택한 작품이에요 · 아직 제출 전</p>')
+    : '';
+  const action =
+      it.isMine    ? '<button disabled>내 작품이에요</button>'
+    : ME.confirmed ? (chosen ? '<button class="green" disabled>✓ 내가 뽑은 작품</button>'
+                             : '<button disabled>이미 제출했어요</button>')
+    : chosen       ? '<button class="green" onclick="confirmVote()">이 작품으로 제출하기</button>'
+    :                `<button class="primary" onclick="castVote('${it.workId}')">${ME.myVote?'이 작품으로 바꾸기':'이 작품 선택'}</button>`;
+
+  b.innerHTML=`${banner}
     ${imgHtml(it.imageUrl, esc(it.region)+' '+esc(it.assetName))}
     <p class="jua" style="font-size:20px; margin:14px 0 2px">${esc(it.region)} · ${esc(it.assetName)}</p>
     <p class="jua" style="font-size:16px; margin:0 0 6px; color:var(--muted)">“${esc(it.slogan)}”</p>
     <div class="sunk" style="margin:12px 0">${esc(it.designDesc)}</div>
     <div class="right">
       <button onclick="closeModal(null,true)">닫기</button>
-      ${it.isMine ? '<button disabled>내 작품이에요</button>'
-        : chosen ? '<button class="green" disabled>✓ 내가 뽑은 작품</button>'
-        : ME.voted ? '<button disabled>이미 투표했어요</button>'
-        : `<button class="primary" onclick="castVote('${it.workId}')">이 작품에 투표</button>`}
+      ${action}
     </div>`;
   document.getElementById('modal').classList.add('show');
 }
 function closeModal(ev,force){ if(force||ev.target.id==='modal') document.getElementById('modal').classList.remove('show'); }
 
+/* 작품 선택 — 아직 제출이 아니라서 몇 번이든 다시 고를 수 있다. */
 async function castVote(workId){
-  try{ await api('vote', Object.assign(authParams(), {workId})); toast('투표했어요!'); closeModal(null,true); loadGallery(); }
-  catch(e){ toast(e.message); }
+  try{
+    await api('vote', Object.assign(authParams(), {workId}));
+    toast('선택했어요. 아래 “제출하기”를 눌러야 확정돼요.');
+    closeModal(null,true);
+    loadGallery({keepScroll:true});
+  }catch(e){ toast(e.message); }
+}
+
+/* 선택한 작품으로 최종 제출 — 이 뒤로는 못 바꾼다. */
+async function confirmVote(){
+  if(!ME.myVote) return toast('먼저 작품을 하나 골라 주세요.');
+  if(!confirm('이 작품으로 제출할까요?\n제출한 뒤에는 바꿀 수 없어요.')) return;
+  const btn=document.getElementById('voteBarBtn');
+  if(btn){ btn.disabled=true; btn.textContent='제출 중…'; }
+  try{
+    await api('confirmVote', authParams());
+    toast('투표를 제출했어요!');
+    closeModal(null,true);
+    loadGallery();
+  }catch(e){ toast(e.message); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='이 작품으로 제출하기'; } }
 }
 
 /* --- 결과 --- */

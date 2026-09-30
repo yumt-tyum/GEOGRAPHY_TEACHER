@@ -181,6 +181,14 @@ button[disabled]{opacity:.45; cursor:not-allowed}
 .work .sl{font-size:12.5px; color:var(--muted); min-height:32px}
 .work.mine{outline:3px dashed var(--red); outline-offset:-3px}
 
+/* 내가 투표한 작품 — 초록 실로 한 번 더 두른 느낌 */
+.work.voted{outline:3px solid var(--green); outline-offset:-3px; position:relative}
+.work.voted .votedTag{
+  background:var(--green); color:#F5FBEF; font-family:'Jua',sans-serif; font-size:12px;
+  border-radius:99px; padding:2px 10px; display:inline-block; margin-top:8px;
+  box-shadow:0 2px 0 rgba(74,59,50,.18);
+}
+
 /* 덮는 창 (투표 상세) */
 #modal{position:fixed; inset:0; background:rgba(46,38,32,.86); display:none; align-items:center; justify-content:center; padding:18px; z-index:80}
 #modal.show{display:flex}
@@ -240,7 +248,7 @@ button[disabled]{opacity:.45; cursor:not-allowed}
   <div class="card">
     <label for="sid">학번 5자리<span class="hint">학년1 + 반2 + 번호2 (예: 30301)</span></label>
     <input id="sid" type="text" inputmode="numeric" maxlength="5" placeholder="30301" autocomplete="off">
-    <div class="right"><button class="ghost" onclick="show('s-tlogin')">선생님이신가요?</button><button class="primary" onclick="doLogin()">들어가기</button></div>
+    <div class="right"><button class="ghost" onclick="goTeacherLogin()">선생님이신가요?</button><button class="primary" onclick="doLogin()">들어가기</button></div>
   </div>
 </section>
 
@@ -257,7 +265,7 @@ button[disabled]{opacity:.45; cursor:not-allowed}
     <input id="tname" type="text" maxlength="20" placeholder="예: 염승희" autocomplete="off">
 
     <p class="muted" style="margin:12px 0 0">이름은 학생에게 공개되지 않아요.</p>
-    <div class="right"><button onclick="show('s-login')">뒤로</button><button class="primary" onclick="doTeacherLogin()">투표하러 가기</button></div>
+    <div class="right"><button onclick="resetSession()">뒤로</button><button class="primary" onclick="doTeacherLogin()">투표하러 가기</button></div>
   </div>
 </section>
 
@@ -388,6 +396,7 @@ button[disabled]{opacity:.45; cursor:not-allowed}
   <div class="card tight center">
     <p class="jua" style="font-size:20px; margin:0">마음에 드는 작품에 한 표</p>
     <p class="muted" id="g-status">한 사람당 한 표, 바꿀 수 없어요.</p>
+    <button class="ghost" onclick="resetSession()">내가 아니에요 · 처음으로</button>
   </div>
   <div class="grid" id="grid"></div>
 </section>
@@ -423,6 +432,9 @@ const CHANGES = {
 };
 
 let ME=null, PHASE='ready', IMG=null, IMG_MIME=null, THUMB=null, CUR=1, POLL=null;
+// 페이지를 열 때 예전 학번으로 자동 로그인이 돌아가는데, 그 응답이 늦게 도착해서
+// 사용자가 직접 옮겨간 화면을 덮어쓰는 일을 막기 위한 취소 플래그.
+let AUTO_ABORT=false;
 
 /* --- 통신 --- */
 async function api(action, payload={}){
@@ -452,17 +464,40 @@ function authParams(){
 }
 
 /* --- 로그인 --- */
-async function doLogin(){
+async function doLogin(isAuto){
   const sid=document.getElementById('sid').value.trim();
-  if(!/^\d{5}$/.test(sid)) return toast('학번 5자리를 정확히 입력해 주세요.');
+  if(!/^\d{5}$/.test(sid)){ if(isAuto) return; return toast('학번 5자리를 정확히 입력해 주세요.'); }
+  if(!isAuto) AUTO_ABORT=true;   // 직접 누른 로그인이 항상 우선
   try{
     const r=await api('login',{sid});
+    // 자동 로그인 응답이 오는 사이에 사용자가 다른 화면(교사 로그인 등)으로 옮겼다면 여기서 멈춘다.
+    if(isAuto && AUTO_ABORT) return;
     ME={sid, name:r.student.name, klass:r.student.klass, region:r.region, submitted:r.submitted, voted:r.voted};
     PHASE=r.phase;
     sessionStorage.setItem('sid',sid);
     routePhase();
     startPolling();
-  }catch(e){ toast(e.message); }
+  }catch(e){ if(!isAuto) toast(e.message); }
+}
+
+/* 교사 로그인 화면으로. 남아 있던 학생 자동 로그인을 확실히 끊는다. */
+function goTeacherLogin(){
+  AUTO_ABORT=true;
+  clearInterval(POLL);
+  ME=null;
+  show('s-tlogin');
+}
+
+/* 이 기기에 남은 로그인 기록을 지우고 처음 화면으로. 기기를 돌려 쓸 때 쓴다. */
+function resetSession(){
+  AUTO_ABORT=true;
+  clearInterval(POLL);
+  ME=null;
+  sessionStorage.removeItem('sid');
+  document.getElementById('sid').value='';
+  document.getElementById('tcode').value='';
+  document.getElementById('tname').value='';
+  show('s-login');
 }
 
 /* --- 교사 투표 로그인 --- */
@@ -808,19 +843,25 @@ async function loadGallery(){
   try{
     const r=await api('getGallery', authParams());
     ME.voted=r.voted;
-    const who = ME.isTeacher ? `${ME.name} 선생님 · ` : '';
+    ME.myVote=r.myVote||'';
+    const who = ME.isTeacher ? `${ME.name} 선생님 · ` : `${ME.klass}반 ${ME.name} · `;
     document.getElementById('g-status').textContent =
-      who + (r.voted ? '투표를 마쳤어요. 다른 작품도 구경해 보세요.' : '한 사람당 한 표, 바꿀 수 없어요.');
+      who + (r.voted ? `${ME.myVote}에 투표했어요. 바꿀 수 없어요.` : '한 사람당 한 표, 바꿀 수 없어요.');
     const g=document.getElementById('grid'); g.innerHTML='';
     r.items.forEach(it=>{
+      const chosen = it.workId===ME.myVote;
       const d=document.createElement('div');
-      d.className='work'+(it.isMine?' mine':'');
+      d.className='work'+(it.isMine?' mine':'')+(chosen?' voted':'');
       d.innerHTML=`${imgHtml(it.imageUrl, '작품 '+it.workId)}
+        ${chosen?'<div class="votedTag">내가 뽑은 작품</div>':''}
         <div class="no">${it.workId}${it.isMine?' · 내 작품':''}</div>
         <div class="sl">“${esc(it.slogan)}”</div>`;
       d.onclick=()=>openWork(it);
       g.appendChild(d);
     });
+    // 내가 투표한 작품이 한눈에 들어오도록 맨 위로 스크롤해 보여준다.
+    const mark=g.querySelector('.work.voted');
+    if(mark) mark.scrollIntoView({block:'center', behavior:'smooth'});
     show('s-gallery');
   }catch(e){ gate('갤러리 준비 중', e.message); }
 }
@@ -844,6 +885,7 @@ function openWork(it){
     <div class="right">
       <button onclick="closeModal(null,true)">닫기</button>
       ${it.isMine ? '<button disabled>내 작품이에요</button>'
+        : it.workId===ME.myVote ? '<button class="green" disabled>✓ 내가 뽑은 작품</button>'
         : ME.voted ? '<button disabled>이미 투표했어요</button>'
         : `<button class="primary" onclick="castVote('${it.workId}')">이 작품에 투표</button>`}
     </div>`;
@@ -885,7 +927,7 @@ document.getElementById('tcode').addEventListener('keydown',e=>{ if(e.key==='Ent
 document.getElementById('tname').addEventListener('keydown',e=>{ if(e.key==='Enter') doTeacherLogin(); });
 document.getElementById('s-form').addEventListener('input', scheduleDraftSave);
 document.getElementById('s-form').addEventListener('change', scheduleDraftSave);
-(function(){ const s=sessionStorage.getItem('sid'); if(s){ document.getElementById('sid').value=s; doLogin(); } })();
+(function(){ const s=sessionStorage.getItem('sid'); if(s){ document.getElementById('sid').value=s; doLogin(true); } })();
 </script>
 </body>
 </html>
